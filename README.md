@@ -162,3 +162,21 @@ packages/react   @figtree/react — the provider that ships in user apps
 packages/cli     @figtree/cli — the local dev server (never in prod)
 example/         reference sample app wiring (main, sd.config, storybook)
 ```
+
+---
+
+## Publishing (maintainers)
+
+Both packages are published to npm as public scoped packages. `dist/` is
+built automatically on publish via each package's `prepublishOnly` script.
+
+```bash
+# one-time: authenticate
+npm login
+
+# from each package directory
+cd packages/react && npm publish
+cd packages/cli   && npm publish
+```
+
+Bump versions before publishing (e.g. `npm version patch` in each package).
