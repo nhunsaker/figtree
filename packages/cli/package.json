@@ -1,0 +1,25 @@
+{
+  "name": "@figtree/cli",
+  "version": "1.0.0",
+  "description": "Local token bridge server and dev tooling for Figtree",
+  "bin": {
+    "figtree": "./dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "files": ["dist"],
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.12.0",
+    "chokidar": "^3.6.0",
+    "commander": "^12.0.0",
+    "hono": "^4.4.0",
+    "nanoid": "^5.0.0",
+    "picocolors": "^1.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0"
+  }
+}

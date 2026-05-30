@@ -1,0 +1,164 @@
+# Figtree
+
+Design token bridge between Figma and your React app.
+
+## Packages
+
+| Package | Description |
+|---|---|
+| `@figtree/react` | React provider — ships in your app bundle |
+| `@figtree/cli` | Local dev server — never touches production |
+
+---
+
+## Setup
+
+### 1. Install
+
+```bash
+# In your React app
+npm install @figtree/react
+
+# As a dev dependency
+npm install -D @figtree/cli
+```
+
+### 2. Add scripts
+
+```json
+// package.json
+{
+  "scripts": {
+    "figtree": "figtree dev"
+  }
+}
+```
+
+### 3. Create config
+
+```bash
+npx figtree init
+```
+
+This creates `figtree.config.json`:
+
+```json
+{
+  "namespace": "my-app",
+  "tokenPath": "tokens/tokens.json",
+  "styleDictionaryConfig": "sd.config.js",
+  "port": 7777
+}
+```
+
+### 4. Wrap your app
+
+```jsx
+// main.jsx
+import { FigtreeProvider, PreviewBanner } from '@figtree/react'
+import { tokens } from './tokens/generated/tokens'
+
+const config = {
+  namespace: 'my-app',
+  tokens,
+  preview: {
+    enabled: import.meta.env.MODE !== 'production',
+    origin: 'http://localhost:7777',
+  },
+}
+
+<FigtreeProvider config={config}>
+  <App />
+  <PreviewBanner />   {/* renders nothing in production */}
+</FigtreeProvider>
+```
+
+### 5. Wrap Storybook stories
+
+```jsx
+// .storybook/preview.jsx
+import { FigtreeProvider } from '@figtree/react'
+import { figtreeConfig } from '../figtree.config'
+
+export const decorators = [
+  (Story) => (
+    <FigtreeProvider config={figtreeConfig}>
+      <Story />
+    </FigtreeProvider>
+  ),
+]
+```
+
+---
+
+## Usage
+
+### Start the local bridge
+
+```bash
+npm run figtree
+# → Figtree running at http://localhost:7777
+```
+
+### Preview tokens in your app
+
+1. Figma plugin POSTs token changes to `http://localhost:7777/preview`
+2. Plugin gets back a preview ID
+3. Plugin opens `your-app.com?preview=<id>`
+4. Your whole app renders with the proposed tokens live
+5. Designer iterates, clicks commit when happy
+
+### Commit tokens via PR
+
+```bash
+npx figtree commit \
+  --owner my-org \
+  --repo my-repo \
+  --pat ghp_xxx \
+  --message "Update primary color to indigo"
+```
+
+---
+
+## Environment behaviour
+
+| Environment | Preview enabled | Token source |
+|---|---|---|
+| `development` | ✅ Yes | bundled + preview overlay |
+| `staging` | ✅ Yes (if configured) | bundled + preview overlay |
+| `production` | ❌ Never | bundled only |
+
+Preview is disabled in production at three independent levels:
+1. `enabled: false` from `NODE_ENV` check
+2. Bundler tree-shakes the preview fetch branch
+3. No local server running anyway
+
+---
+
+## Hooks
+
+```jsx
+import { useToken, useTokens, useIsPreview, usePreviewState } from '@figtree/react'
+
+// Single token value
+const primary = useToken('color-primary')
+
+// All active tokens
+const tokens = useTokens()
+
+// Check if preview is active
+const isPreviewing = useIsPreview()
+
+// Full preview controls
+const { isPreview, previewId, clearPreview } = usePreviewState()
+```
+
+---
+
+## Repo layout
+
+```
+packages/react   @figtree/react — the provider that ships in user apps
+packages/cli     @figtree/cli — the local dev server (never in prod)
+example/         reference sample app wiring (main, sd.config, storybook)
+```

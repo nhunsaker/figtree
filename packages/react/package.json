@@ -1,0 +1,26 @@
+{
+  "name": "@figtree/react",
+  "version": "1.0.0",
+  "description": "React provider for Figtree design tokens",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.0",
+    "react": "^18.0.0"
+  }
+}

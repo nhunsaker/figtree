@@ -1,0 +1,6 @@
+{
+  "namespace": "my-app",
+  "tokenPath": "tokens/tokens.json",
+  "styleDictionaryConfig": "sd.config.js",
+  "port": 7777
+}
