@@ -37,8 +37,15 @@ npm install -D @metatoy/figtree-cli
 ### 3. Create config
 
 ```bash
-npx figtree init
+npx @metatoy/figtree-cli init
 ```
+
+> The `figtree` command is the binary shipped by `@metatoy/figtree-cli`.
+> If you've already run the `npm install -D @metatoy/figtree-cli` from
+> step 1, `npx figtree init` works too (it resolves from local
+> `node_modules/.bin`). Before that install, use the full package name
+> as shown above — otherwise `npx figtree` can't find the executable and
+> errors with `could not determine executable to run`.
 
 This creates `figtree.config.json`:
 

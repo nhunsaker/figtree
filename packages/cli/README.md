@@ -8,7 +8,20 @@ it never touches production.
 npm install -D @metatoy/figtree-cli
 ```
 
+This installs the `figtree` binary into your project. To run it once
+without installing first, use the full package name with npx:
+
+```bash
+npx @metatoy/figtree-cli init
+```
+
+> `figtree` is the binary, not the package name. `npx figtree` only works
+> after `@metatoy/figtree-cli` is installed locally; otherwise npx fails
+> with `could not determine executable to run`.
+
 ## Commands
+
+Once installed, run via npx or an npm script:
 
 ```bash
 figtree init      # create a figtree.config.json
