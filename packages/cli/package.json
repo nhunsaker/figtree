@@ -1,9 +1,15 @@
 {
-  "name": "@figtree/cli",
+  "name": "@metatoy/figtree-cli",
   "version": "1.0.0",
   "description": "Local token bridge server and dev tooling for Figtree",
   "license": "MIT",
-  "keywords": ["figtree", "design-tokens", "figma", "cli", "tokens"],
+  "keywords": [
+    "figtree",
+    "design-tokens",
+    "figma",
+    "cli",
+    "tokens"
+  ],
   "homepage": "https://github.com/nhunsaker/figtree#readme",
   "bugs": "https://github.com/nhunsaker/figtree/issues",
   "repository": {
@@ -15,10 +21,12 @@
     "access": "public"
   },
   "bin": {
-    "figtree": "./dist/cli.js"
+    "figtree": "dist/cli.js"
   },
   "main": "dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",

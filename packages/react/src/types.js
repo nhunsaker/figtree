@@ -1,4 +1,4 @@
-// Type definitions for @figtree/react, expressed as JSDoc typedefs.
+// Type definitions for @metatoy/figtree-react, expressed as JSDoc typedefs.
 // These carry no runtime code — they exist purely for editor tooling and docs.
 
 /**

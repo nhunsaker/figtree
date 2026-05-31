@@ -1,0 +1,19 @@
+{
+  "name": "figtree-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reference app wiring showing how to consume the Figtree packages",
+  "type": "module",
+  "scripts": {
+    "figtree": "figtree dev"
+  },
+  "dependencies": {
+    "@metatoy/figtree-react": "^1.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@metatoy/figtree-cli": "^1.0.0",
+    "style-dictionary": "^4.0.0"
+  }
+}

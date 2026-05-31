@@ -1,5 +1,5 @@
 import React from 'react'
-import { FigtreeProvider } from '@figtree/react'
+import { FigtreeProvider } from '@metatoy/figtree-react'
 import { figtreeConfig } from '../figtree.config'
 
 // The same FigtreeProvider that wraps the real app also wraps every

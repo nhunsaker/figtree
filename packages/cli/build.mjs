@@ -1,7 +1,7 @@
 import { build, context } from 'esbuild'
 import { chmodSync } from 'fs'
 
-// @figtree/cli is a Node CLI. Deps stay external (installed from the
+// @metatoy/figtree-cli is a Node CLI. Deps stay external (installed from the
 // package's own node_modules), so we only bundle our own source.
 const base = {
   bundle: true,
@@ -27,9 +27,9 @@ const builds = [
 if (process.argv.includes('--watch')) {
   const ctxs = await Promise.all(builds.map((b) => context(b)))
   await Promise.all(ctxs.map((c) => c.watch()))
-  console.log('@figtree/cli — watching for changes...')
+  console.log('@metatoy/figtree-cli — watching for changes...')
 } else {
   await Promise.all(builds.map((b) => build(b)))
   chmodSync('dist/cli.js', 0o755)
-  console.log('@figtree/cli — built dist/cli.js + dist/index.js')
+  console.log('@metatoy/figtree-cli — built dist/cli.js + dist/index.js')
 }

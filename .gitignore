@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# This is a pnpm workspace; per-package npm lockfiles are not used.
+package-lock.json

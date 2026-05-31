@@ -1,16 +1,16 @@
-# @figtree/react
+# @metatoy/figtree-react
 
 React provider for [Figtree](https://github.com/nhunsaker/figtree) design
 tokens. Ships in your app bundle — zero runtime dependencies beyond React.
 
 ```bash
-npm install @figtree/react
+npm install @metatoy/figtree-react
 ```
 
 ## Usage
 
 ```jsx
-import { FigtreeProvider, PreviewBanner } from '@figtree/react'
+import { FigtreeProvider, PreviewBanner } from '@metatoy/figtree-react'
 import { tokens } from './tokens/generated/tokens'
 
 const config = {
@@ -37,7 +37,7 @@ breaks production.
 ## Hooks
 
 ```jsx
-import { useToken, useTokens, useIsPreview, usePreviewState } from '@figtree/react'
+import { useToken, useTokens, useIsPreview, usePreviewState } from '@metatoy/figtree-react'
 
 const primary = useToken('color-primary')          // single token value
 const tokens = useTokens()                          // full active token set

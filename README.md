@@ -6,8 +6,8 @@ Design token bridge between Figma and your React app.
 
 | Package | Description |
 |---|---|
-| `@figtree/react` | React provider — ships in your app bundle |
-| `@figtree/cli` | Local dev server — never touches production |
+| `@metatoy/figtree-react` | React provider — ships in your app bundle |
+| `@metatoy/figtree-cli` | Local dev server — never touches production |
 
 ---
 
@@ -17,10 +17,10 @@ Design token bridge between Figma and your React app.
 
 ```bash
 # In your React app
-npm install @figtree/react
+npm install @metatoy/figtree-react
 
 # As a dev dependency
-npm install -D @figtree/cli
+npm install -D @metatoy/figtree-cli
 ```
 
 ### 2. Add scripts
@@ -55,7 +55,7 @@ This creates `figtree.config.json`:
 
 ```jsx
 // main.jsx
-import { FigtreeProvider, PreviewBanner } from '@figtree/react'
+import { FigtreeProvider, PreviewBanner } from '@metatoy/figtree-react'
 import { tokens } from './tokens/generated/tokens'
 
 const config = {
@@ -77,7 +77,7 @@ const config = {
 
 ```jsx
 // .storybook/preview.jsx
-import { FigtreeProvider } from '@figtree/react'
+import { FigtreeProvider } from '@metatoy/figtree-react'
 import { figtreeConfig } from '../figtree.config'
 
 export const decorators = [
@@ -138,7 +138,7 @@ Preview is disabled in production at three independent levels:
 ## Hooks
 
 ```jsx
-import { useToken, useTokens, useIsPreview, usePreviewState } from '@figtree/react'
+import { useToken, useTokens, useIsPreview, usePreviewState } from '@metatoy/figtree-react'
 
 // Single token value
 const primary = useToken('color-primary')
@@ -158,8 +158,8 @@ const { isPreview, previewId, clearPreview } = usePreviewState()
 ## Repo layout
 
 ```
-packages/react   @figtree/react — the provider that ships in user apps
-packages/cli     @figtree/cli — the local dev server (never in prod)
+packages/react   @metatoy/figtree-react — the provider that ships in user apps
+packages/cli     @metatoy/figtree-cli — the local dev server (never in prod)
 example/         reference sample app wiring (main, sd.config, storybook)
 ```
 

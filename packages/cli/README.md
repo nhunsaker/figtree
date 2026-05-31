@@ -1,11 +1,11 @@
-# @figtree/cli
+# @metatoy/figtree-cli
 
 Local token bridge server and dev tooling for
 [Figtree](https://github.com/nhunsaker/figtree). A dev dependency only —
 it never touches production.
 
 ```bash
-npm install -D @figtree/cli
+npm install -D @metatoy/figtree-cli
 ```
 
 ## Commands

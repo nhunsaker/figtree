@@ -1,4 +1,4 @@
-// Type definitions for @figtree/cli, expressed as JSDoc typedefs.
+// Type definitions for @metatoy/figtree-cli, expressed as JSDoc typedefs.
 // No runtime code — purely for editor tooling and docs.
 
 /**
