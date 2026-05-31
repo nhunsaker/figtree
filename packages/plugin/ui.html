@@ -118,7 +118,11 @@
         try {
           const res = await fetch(origin + '/preview', {
             method: 'POST',
-            headers: { 'content-type': 'application/json' },
+            // text/plain keeps this a CORS "simple request" (no OPTIONS
+            // preflight), so it passes through proxies that mishandle
+            // preflights. The body is still JSON — the server parses it by
+            // content, not by header.
+            headers: { 'content-type': 'text/plain' },
             body: JSON.stringify(body),
           });
           if (!res.ok) throw new Error('HTTP ' + res.status);

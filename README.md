@@ -203,16 +203,34 @@ example/         reference sample app wiring (main, sd.config, storybook)
 
 ## Publishing (maintainers)
 
-Both packages are published to npm as public scoped packages. `dist/` is
-built automatically on publish via each package's `prepublishOnly` script.
+Both packages are published to npm as public scoped packages
+(`@metatoy/figtree-react`, `@metatoy/figtree-cli`). `dist/` is built
+automatically on publish via each package's `prepublishOnly` script.
+
+### Release via GitHub (recommended)
+
+Publishing is automated by `.github/workflows/release.yml`. **Creating a
+GitHub Release publishes to npm**, with the release tag setting the version:
+
+1. Decide the version, e.g. `1.2.0`.
+2. GitHub → **Releases → Draft a new release** → create a tag **`v1.2.0`** →
+   **Publish release**.
+3. The workflow sets both packages to `1.2.0`, builds, and publishes them.
+   (The private plugin package is skipped.)
+
+**One-time setup:** add a repo secret **`NPM_TOKEN`** = an npm **Automation**
+token for the `@metatoy` org (Automation tokens bypass 2FA, which manual
+`npm publish` from this account requires). npm → Access Tokens → Generate →
+*Automation*.
+
+> The tag is the source of truth for the version; the workflow doesn't commit
+> the bump back, so `package.json` in git may lag. If you prefer `package.json`
+> as the source, bump + commit it in a PR before tagging the matching release.
+
+### Manual fallback
 
 ```bash
-# one-time: authenticate
-npm login
-
-# from each package directory
-cd packages/react && npm publish
-cd packages/cli   && npm publish
+npm login                                   # account uses 2FA → OTP prompts
+cd packages/react && npm version 1.2.0 --no-git-tag-version && npm publish --otp=<code>
+cd packages/cli   && npm version 1.2.0 --no-git-tag-version && npm publish --otp=<code>
 ```
-
-Bump versions before publishing (e.g. `npm version patch` in each package).

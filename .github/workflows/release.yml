@@ -1,0 +1,54 @@
+name: Release
+
+# Publish to npm when a GitHub Release is published. The release's tag
+# (e.g. "v1.2.0") sets the version for both public packages.
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Derive version from the release tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"   # strip leading "v": v1.2.0 -> 1.2.0
+          echo "Publishing version $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set package versions
+        run: |
+          pnpm -r \
+            --filter '@metatoy/figtree-react' \
+            --filter '@metatoy/figtree-cli' \
+            exec npm version "${{ steps.version.outputs.version }}" \
+              --no-git-tag-version --allow-same-version
+
+      - name: Publish to npm
+        # prepublishOnly builds dist/ for each package before it's packed.
+        # The private plugin package is skipped automatically.
+        run: |
+          pnpm -r \
+            --filter '@metatoy/figtree-react' \
+            --filter '@metatoy/figtree-cli' \
+            publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
