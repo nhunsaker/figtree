@@ -17,10 +17,11 @@ components arrive pre-bound to Figma Variables.
 
 ## Prerequisites (v1)
 
-`figtree seed` requires **both** to be running:
-1. A reachable **Storybook** (`seed.storybookUrl`) — we do not auto-start it.
-2. The **bridge** (`figtree dev`) — seed fetches the resolved token map from it
-   (`GET /tokens/resolved`) so the resolver logic lives in one place.
+`figtree seed` requires a reachable **Storybook** (`seed.storybookUrl`) — we do
+not auto-start it. seed is otherwise **self-contained**: it computes the
+resolved token map itself (see Resolver) and writes `.figtree/resolved.json`.
+The **bridge** (`figtree dev`) is only needed later, when the *plugin* consumes
+the artifacts/resolved map.
 
 ## Command
 
@@ -62,8 +63,8 @@ figtree seed [--only <glob>] [--changed]
    (`./src/components/StyledComponents/Button.stories.jsx`) → absolute path →
    co-located output location.
 
-3. **Get the resolved token map** — `GET ${bridge}/tokens/resolved` (see
-   Resolver). Build a value→token index for matching.
+3. **Resolve the bindable token map** from `themePath` (see Resolver) and write
+   `.figtree/resolved.json`. Build a value→token index for matching.
 
 4. **Launch headless Chromium** (Playwright). Inject the bundled `htmlToFigma`
    once per page, then for each selected story:
@@ -203,18 +204,25 @@ not the value). Instead:
    else semantic. (Heuristic — a semantic token literally named `red` would
    misclassify; acceptable for v1.)
 
-**Ownership/data flow:** the resolver lives in `@metatoy/figtree-cli`; the
-**bridge** computes the map (from `themePath`) and serves it at
-`GET /tokens/resolved` (cached to `.figtree/resolved.json`). `seed` consumes
-that endpoint — no duplicated resolver logic.
+**Ownership/data flow (validated):** the resolver lives in
+`@metatoy/figtree-seed` (where esbuild already lives). `figtree seed` computes
+the map and writes `.figtree/resolved.json`. The **bridge** just *serves* that
+file at `GET /tokens/resolved` — so the bridge needs **no esbuild runtime
+dependency** and stays lean. The plugin's Variable-sync reads the same endpoint.
 
-> ⚠️ This step is the implementation risk. If the bundle-and-evaluate approach
-> proves messy, that's the signal to do the deferred **token refactor** (tiered
-> `tokens.json` with semantic aliases) so the resolved map is just data.
+> ✅ **Spike result (de-risked):** validated against the real `theme.js` — 32
+> bindable tokens (23 semantic / 9 primitive); template-literal values resolved
+> (`${tokens.blue5}` → `#0F65EF`), comma/space fallbacks parsed
+> (`0px 0px 0px 4px #C9D8FC`), raw primitives correctly excluded. Two notes:
+> the theme's import graph reaches **JSX in `.js`**, so `loader: { '.js': 'jsx' }`
+> is required; and bundle-and-evaluate pulls the app's dependency graph (works,
+> but heavyweight — a later optimization is to stub imports that don't feed
+> bindable values). The token refactor is **not** needed.
 
 ## Bridge endpoints (added)
 
-- `GET /tokens/resolved` → `[{ name, value, kind }]` (CORS `*`).
+- `GET /tokens/resolved` → serves the seed-generated `.figtree/resolved.json`
+  (`[{ name, value, kind }]`); 404 ("run figtree seed") if absent. CORS `*`.
 - `GET /artifacts` → the index (list of components/stories + metadata).
 - `GET /artifact?id=<storyId>` → the artifact for a story. **Looked up by id in
   the index — never an arbitrary filesystem path** (avoids path traversal).
@@ -273,5 +281,5 @@ that endpoint — no duplicated resolver logic.
 2. **Resolver = esbuild bundle-and-evaluate** of `theme.js` (not static parse / not app-runtime import).
 3. **Generated files under `.figtree/`** (index + resolved cache), not `tokens/`. Per-component captures still next to stories.
 4. **Commit `*.figtree.json`, gitignore `.figtree/resolved.json`.**
-5. **`seed` requires the bridge running** (to fetch `/tokens/resolved`) — couples them, but keeps one resolver.
+5. **`seed` is self-contained** — it computes + writes `.figtree/resolved.json` itself (resolver in `@metatoy/figtree-seed`); the bridge only *serves* that file, so it needs no esbuild and stays lean. seed needs only Storybook, not the bridge. *(Reverses the earlier "seed requires bridge" note, thanks to the spike.)*
 6. **Artifact endpoint serves by `id`**, not path.

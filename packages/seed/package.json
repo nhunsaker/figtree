@@ -1,0 +1,11 @@
+{
+  "name": "@metatoy/figtree-seed",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Storybook → Figma capture for Figtree: headless capture + the resolved bindable token map. Heavy deps (esbuild, later Playwright) live here so the bridge stays lean.",
+  "type": "module",
+  "main": "src/index.js",
+  "dependencies": {
+    "esbuild": "^0.21.0"
+  }
+}
