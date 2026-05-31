@@ -31,9 +31,21 @@ In the panel:
   `https://callout-admin-ui.dev.buzzfeed.io/figtree` (or `http://localhost:7777`).
 - **App URL** — the page to open, e.g.
   `https://callout-admin-ui.dev.buzzfeed.io/campaign`.
+- **GitHub file** — the *edit* URL of the token file on the target branch,
+  e.g. `https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json`.
 - The **Tokens** box is prefilled from your Figma Variables; edit freely.
 - **Preview in app →** POSTs the tokens and opens the app with the new id.
 - **Load committed** pulls the live committed set from `GET /tokens/latest`.
+- **Open PR…** merges your edits onto the committed token set, copies the
+  full `tokens.json` to your clipboard, and opens the GitHub web editor for
+  the **GitHub file** above. Paste (⌘A → paste) → *Commit changes…* →
+  *Propose changes* opens a PR **under your own GitHub account** — no token
+  in the plugin. (You must be signed in to GitHub with repo access.)
+
+> Because GitHub can't prefill an *edit* of an existing file via URL, Open PR
+> uses the clipboard + the web editor. It merges onto the committed set (from
+> `GET /tokens/latest`) so the PR is a clean diff and never drops untouched
+> tokens — so the bridge must be reachable when you use it.
 
 > Any origin the UI calls must be listed in `manifest.json`'s
 > `networkAccess.allowedDomains` (add your bridge domain there; `["*"]` is

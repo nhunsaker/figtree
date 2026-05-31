@@ -34,6 +34,9 @@
     <label>App URL <span class="hint">(page to open with the preview)</span></label>
     <input id="appUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/campaign" />
 
+    <label>GitHub file <span class="hint">(edit URL of tokens.json on the target branch)</span></label>
+    <input id="githubUrl" placeholder="https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json" />
+
     <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
     <textarea id="tokens">{}</textarea>
 
@@ -44,8 +47,15 @@
     <div class="row">
       <button class="primary" id="preview">Preview in app →</button>
     </div>
+    <div class="row">
+      <button class="secondary" id="openpr">Open PR…</button>
+    </div>
 
     <div class="status" id="status"></div>
+
+    <!-- off-screen buffer used as a clipboard fallback -->
+    <textarea id="copybuf" aria-hidden="true" tabindex="-1"
+      style="position:absolute;left:-9999px;top:-9999px;height:1px;"></textarea>
 
     <script>
       const $ = (id) => document.getElementById(id);
@@ -58,16 +68,19 @@
       // remember origin / app url between runs.
       // localStorage can throw in Figma's sandboxed (null-origin) iframe, so
       // every access is guarded — a failure here must not abort the script.
-      const LS = { origin: 'figtree.origin', app: 'figtree.appUrl' };
+      const LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl' };
       const lsGet = (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
       const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
       // Editable defaults so the fields are never blank on first run.
       const DEFAULT_ORIGIN = 'https://callout-admin-ui.dev.buzzfeed.io/figtree';
       const DEFAULT_APP = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
+      const DEFAULT_GH = 'https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json';
       $('origin').value = lsGet(LS.origin) || DEFAULT_ORIGIN;
       $('appUrl').value = lsGet(LS.app) || DEFAULT_APP;
+      $('githubUrl').value = lsGet(LS.gh) || DEFAULT_GH;
       $('origin').addEventListener('change', (e) => lsSet(LS.origin, e.target.value));
       $('appUrl').addEventListener('change', (e) => lsSet(LS.app, e.target.value));
+      $('githubUrl').addEventListener('change', (e) => lsSet(LS.gh, e.target.value));
 
       const trimOrigin = () => $('origin').value.trim().replace(/\/$/, '');
 
@@ -135,6 +148,61 @@
         } catch (e) {
           setStatus('Preview failed: ' + e.message + ' (is the bridge running and allowed in manifest?)', true);
         }
+      };
+
+      // ── Open a PR (no token, designer's own GitHub account) ───────────────
+      // Merge the edits onto the committed token set, copy the full
+      // tokens.json to the clipboard, and open the GitHub web editor so the
+      // designer can paste → Commit changes → Propose changes (opens the PR).
+      $('openpr').onclick = async () => {
+        let edits;
+        try {
+          edits = JSON.parse($('tokens').value);
+        } catch {
+          return setStatus('Tokens must be valid JSON.', true);
+        }
+        const origin = trimOrigin();
+        const editUrl = $('githubUrl').value.trim();
+        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        if (!editUrl) return setStatus('Set the GitHub file URL first.', true);
+
+        // Merge onto the committed set so the PR is a clean diff and never
+        // drops the tokens the designer didn't touch.
+        setStatus('Merging with committed tokens…');
+        let committed;
+        try {
+          const res = await fetch(origin + '/tokens/latest');
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          committed = await res.json();
+        } catch (e) {
+          return setStatus('Could not load committed tokens to merge (' + e.message +
+            '); aborting so we don’t replace the file with a partial set.', true);
+        }
+
+        const merged = { ...committed, ...edits };
+        const json = JSON.stringify(merged, null, 2) + '\n';
+        const changed = Object.keys(edits).filter((k) => committed[k] !== edits[k]);
+
+        // Copy the full file (clipboard API → legacy execCommand → visible box).
+        let copied = false;
+        try { await navigator.clipboard.writeText(json); copied = true; } catch {}
+        if (!copied) {
+          try {
+            const buf = $('copybuf');
+            buf.value = json; buf.focus(); buf.select();
+            copied = document.execCommand('copy');
+          } catch {}
+        }
+        if (!copied) $('tokens').value = json; // last resort: surface for manual copy
+
+        window.open(editUrl, '_blank');
+        setStatus(
+          (copied
+            ? '✓ Copied the full <code>tokens.json</code> to your clipboard. '
+            : 'Could not auto-copy — the merged file is now in the Tokens box; select all and copy it. ') +
+          'In the GitHub tab: <b>select all (⌘A) → paste → Commit changes… → Propose changes</b> to open the PR.' +
+          '<br/>Changed: ' + (changed.length ? '<b>' + changed.join(', ') + '</b>' : 'none')
+        );
       };
     </script>
   </body>
