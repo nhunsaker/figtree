@@ -58,7 +58,36 @@ This creates `figtree.config.json`:
 }
 ```
 
-### 4. Wrap your app
+### 4. Provide your committed tokens
+
+The provider needs a committed token set — a flat `name → value` object
+that's bundled at build time and used in production. The next step imports
+it from `tokens/generated/tokens`, so that module has to exist.
+
+To get started, create it by hand (e.g. `src/tokens/generated/tokens.js`,
+matching the relative path you import from):
+
+```js
+// src/tokens/generated/tokens.js
+export const tokens = {
+  'color-primary': '#3B5BDB',
+  'color-bg': '#ffffff',
+  'color-text': '#1a1a1a',
+  'space-md': '16px',
+}
+```
+
+Each key becomes a CSS custom property on `:root` (`--color-primary`, …)
+and is readable via `useToken('color-primary')`.
+
+> **Generating it instead:** the `figtree` CLI can run Style Dictionary
+> from a `tokens/tokens.json` source on every change. Note that Style
+> Dictionary's built-in `javascript/es6` format emits *individual* named
+> consts (`export const ColorPrimary = …`), **not** a single `tokens`
+> object — so to keep the `import { tokens }` shape above, use a custom
+> format that exports one object, or hand-maintain this file.
+
+### 5. Wrap your app
 
 ```jsx
 // main.jsx
@@ -80,7 +109,7 @@ const config = {
 </FigtreeProvider>
 ```
 
-### 5. Wrap Storybook stories
+### 6. Wrap Storybook stories
 
 ```jsx
 // .storybook/preview.jsx

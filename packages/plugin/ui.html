@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 12px; }
+      body { margin: 0; padding: 14px; color: #1a1a1a; }
+      h1 { font-size: 13px; margin: 0 0 10px; }
+      label { display: block; font-weight: 600; margin: 10px 0 4px; }
+      input, textarea {
+        width: 100%; box-sizing: border-box; border: 1px solid #d9d9d9;
+        border-radius: 6px; padding: 7px 8px; font-size: 12px; font-family: inherit;
+      }
+      textarea { height: 230px; font-family: ui-monospace, Menlo, monospace; resize: vertical; }
+      .row { display: flex; gap: 8px; margin-top: 12px; }
+      button {
+        flex: 1; border: 0; border-radius: 6px; padding: 9px 12px; font-size: 12px;
+        font-weight: 600; cursor: pointer;
+      }
+      .primary { background: #16a34a; color: #fff; }
+      .secondary { background: #eee; color: #1a1a1a; }
+      .status { margin-top: 10px; font-size: 11px; min-height: 15px; color: #555; }
+      .status a { color: #16a34a; }
+      .status.err { color: #c0341d; }
+      .hint { color: #888; font-weight: 400; font-size: 11px; }
+    </style>
+  </head>
+  <body>
+    <h1>Figtree — preview tokens</h1>
+
+    <label>Bridge origin <span class="hint">(where <code>figtree dev</code> is reachable)</span></label>
+    <input id="origin" placeholder="https://callout-admin-ui.dev.buzzfeed.io/figtree" />
+
+    <label>App URL <span class="hint">(page to open with the preview)</span></label>
+    <input id="appUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/campaign" />
+
+    <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
+    <textarea id="tokens">{}</textarea>
+
+    <div class="row">
+      <button class="secondary" id="reload">Reload from Figma</button>
+      <button class="secondary" id="committed">Load committed</button>
+    </div>
+    <div class="row">
+      <button class="primary" id="preview">Preview in app →</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const setStatus = (html, isErr) => {
+        const el = $('status');
+        el.className = 'status' + (isErr ? ' err' : '');
+        el.innerHTML = html;
+      };
+
+      // remember origin / app url between runs.
+      // localStorage can throw in Figma's sandboxed (null-origin) iframe, so
+      // every access is guarded — a failure here must not abort the script.
+      const LS = { origin: 'figtree.origin', app: 'figtree.appUrl' };
+      const lsGet = (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+      const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+      // Editable defaults so the fields are never blank on first run.
+      const DEFAULT_ORIGIN = 'https://callout-admin-ui.dev.buzzfeed.io/figtree';
+      const DEFAULT_APP = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
+      $('origin').value = lsGet(LS.origin) || DEFAULT_ORIGIN;
+      $('appUrl').value = lsGet(LS.app) || DEFAULT_APP;
+      $('origin').addEventListener('change', (e) => lsSet(LS.origin, e.target.value));
+      $('appUrl').addEventListener('change', (e) => lsSet(LS.app, e.target.value));
+
+      const trimOrigin = () => $('origin').value.trim().replace(/\/$/, '');
+
+      // ── messages from the main thread (Figma variables) ───────────────────
+      onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+        if (msg.type === 'tokens') {
+          $('tokens').value = JSON.stringify(msg.tokens, null, 2);
+          setStatus(Object.keys(msg.tokens).length + ' token(s) loaded from Figma Variables.');
+        } else if (msg.type === 'error') {
+          setStatus('Could not read Variables: ' + msg.message, true);
+        }
+      };
+
+      const post = (type, extra) =>
+        parent.postMessage({ pluginMessage: { type, ...extra } }, '*');
+
+      $('reload').onclick = () => post('reload-tokens');
+
+      // Pull the committed token set straight from the bridge (GET /tokens/latest)
+      $('committed').onclick = async () => {
+        const origin = trimOrigin();
+        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        try {
+          const res = await fetch(origin + '/tokens/latest');
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          $('tokens').value = JSON.stringify(await res.json(), null, 2);
+          setStatus('Loaded committed tokens from the bridge.');
+        } catch (e) {
+          setStatus('Failed to load committed tokens: ' + e.message, true);
+        }
+      };
+
+      // POST the (edited) tokens, get an id, open the app at ?preview=<id>
+      $('preview').onclick = async () => {
+        let body;
+        try {
+          body = JSON.parse($('tokens').value);
+        } catch {
+          return setStatus('Tokens must be valid JSON.', true);
+        }
+        const origin = trimOrigin();
+        const appUrl = $('appUrl').value.trim();
+        if (!origin || !appUrl) return setStatus('Set both the bridge origin and the app URL.', true);
+
+        setStatus('Posting preview…');
+        try {
+          const res = await fetch(origin + '/preview', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const { id } = await res.json();
+          const sep = appUrl.includes('?') ? '&' : '?';
+          const url = `${appUrl}${sep}preview=${id}`;
+          window.open(url, '_blank');
+          post('notify', { message: 'Preview ready: ' + id });
+          setStatus(`Preview <b>${id}</b> created. <a href="${url}" target="_blank">Open app ↗</a>`);
+        } catch (e) {
+          setStatus('Preview failed: ' + e.message + ' (is the bridge running and allowed in manifest?)', true);
+        }
+      };
+    </script>
+  </body>
+</html>

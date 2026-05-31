@@ -1,0 +1,53 @@
+# @metatoy/figtree-plugin
+
+Figma plugin that automates the Figtree preview loop: it reads your file's
+**Variables**, maps them to Figtree's `name → value` token shape, POSTs them
+to the local [bridge](../cli) (`POST /preview`), and opens your app at
+`?preview=<id>` — exactly what you'd otherwise do by hand with `curl`.
+
+It's plain `code.js` + `ui.html` (no build step), loaded directly by Figma.
+
+## How it works
+
+| Part | Runs in | Responsibility |
+|---|---|---|
+| `code.js` | Figma sandbox (has `figma.*`, **no** network) | Read local Variables → flatten to tokens → send to UI |
+| `ui.html` | iframe (has `fetch`, **no** `figma.*`) | POST tokens to the bridge, open the app at `?preview=<id>` |
+| `manifest.json` | — | Entry points + `networkAccess.allowedDomains` |
+
+The two halves talk over `postMessage`, because the sandbox can't make
+network calls and the iframe can't touch the document.
+
+## Load it in Figma
+
+1. Make sure the bridge is running (`figtree dev`, or your deployed
+   `/figtree` endpoint).
+2. Figma → **Plugins → Development → Import plugin from manifest…** and pick
+   this folder's `manifest.json`.
+3. Run **Plugins → Development → Figtree**.
+
+In the panel:
+- **Bridge origin** — where the bridge is reachable, e.g.
+  `https://callout-admin-ui.dev.buzzfeed.io/figtree` (or `http://localhost:7777`).
+- **App URL** — the page to open, e.g.
+  `https://callout-admin-ui.dev.buzzfeed.io/campaign`.
+- The **Tokens** box is prefilled from your Figma Variables; edit freely.
+- **Preview in app →** POSTs the tokens and opens the app with the new id.
+- **Load committed** pulls the live committed set from `GET /tokens/latest`.
+
+> Any origin the UI calls must be listed in `manifest.json`'s
+> `networkAccess.allowedDomains` (add your bridge domain there; `["*"]` is
+> allowed during development). The page must be HTTPS-reachable if you open
+> the app over HTTPS — same mixed-content rule as the provider's `origin`.
+
+## Token mapping
+
+- `COLOR` variables → hex (`#rrggbb`, or `#rrggbbaa` when alpha < 1)
+- `FLOAT` variables → `Npx` (and `0` stays `0`)
+- `STRING` / `BOOLEAN` → as-is
+- grouped names like `color/primaryAction` are flattened to the leaf
+  (`primaryAction`) so they're valid CSS custom-property names
+
+Name your Figma Variables to match the token names your app consumes
+(`primaryAction`, `primaryActionHover`, `borderRadius`, …) and the preview
+flows straight through to `var(--primaryAction)` etc.

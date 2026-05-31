@@ -28,6 +28,13 @@ const config = {
 </FigtreeProvider>
 ```
 
+> `tokens` is your committed token set — a flat `name → value` object you
+> provide (e.g. `src/tokens/generated/tokens.js` exporting
+> `export const tokens = { 'color-primary': '#3B5BDB', … }`). It's bundled
+> at build time and used in production. See the
+> [main README](https://github.com/nhunsaker/figtree#readme) for generating
+> it with Style Dictionary.
+
 When the app is opened with `?preview=<id>`, the provider fetches the
 proposed token set from the local Figtree server, applies it as CSS custom
 properties on `:root`, and polls for live updates. If the server isn't

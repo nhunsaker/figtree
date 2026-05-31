@@ -1,0 +1,14 @@
+{
+  "name": "Figtree",
+  "id": "1642981326933657018",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["https://callout-admin-ui.dev.buzzfeed.io"]
+  }
+}
