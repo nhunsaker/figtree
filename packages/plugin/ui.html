@@ -7,7 +7,7 @@
       body { margin: 0; padding: 14px; color: #1a1a1a; }
       h1 { font-size: 13px; margin: 0 0 10px; }
       label { display: block; font-weight: 600; margin: 10px 0 4px; }
-      input, textarea {
+      input, textarea, select {
         width: 100%; box-sizing: border-box; border: 1px solid #d9d9d9;
         border-radius: 6px; padding: 7px 8px; font-size: 12px; font-family: inherit;
       }
@@ -50,6 +50,13 @@
     <div class="row">
       <button class="secondary" id="openpr">Open PR…</button>
       <button class="secondary" id="syncvars">Sync Variables from code</button>
+    </div>
+
+    <label>Insert from Storybook <span class="hint">(captured components)</span></label>
+    <div class="row">
+      <select id="storyPick" style="flex:2;"></select>
+      <button class="secondary" id="loadStories" style="flex:0 0 36px;" title="Load captured stories">↻</button>
+      <button class="primary" id="insert" style="flex:1;">Insert</button>
     </div>
 
     <div class="status" id="status"></div>
@@ -98,6 +105,8 @@
             (msg.skipped ? `, ${msg.skipped} skipped` : '') +
             ` (collection "${msg.collection}").`
           );
+        } else if (msg.type === 'insert-result') {
+          setStatus('✓ Inserted into the canvas.');
         } else if (msg.type === 'error') {
           setStatus('Plugin error: ' + msg.message, true);
         }
@@ -128,6 +137,55 @@
         if (!tokens || !tokens.length) return setStatus('Resolved token map is empty.', true);
         post('sync-variables', { tokens });
         setStatus(`Creating Figma Variables from ${tokens.length} tokens…`);
+      };
+
+      // Load the captured-component index and fill the story picker.
+      const loadStories = async () => {
+        const origin = trimOrigin();
+        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        try {
+          const res = await fetch(origin + '/artifacts');
+          if (!res.ok) {
+            throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed capture` first' : ''));
+          }
+          const idx = await res.json();
+          const stories = idx.stories || {};
+          const ids = Object.keys(stories);
+          const sel = $('storyPick');
+          sel.innerHTML = '';
+          if (!ids.length) return setStatus('No captured stories in the index.', true);
+          for (const id of ids) {
+            const o = document.createElement('option');
+            o.value = id;
+            const s = stories[id];
+            o.textContent = (s.component || '') + ' / ' + (s.name || id);
+            sel.appendChild(o);
+          }
+          setStatus(ids.length + ' captured stor' + (ids.length === 1 ? 'y' : 'ies') + ' loaded — pick one and Insert.');
+        } catch (e) {
+          setStatus('Failed to load stories: ' + e.message, true);
+        }
+      };
+      $('loadStories').onclick = loadStories;
+
+      // Fetch the chosen story's artifact and hand its tree to the main thread.
+      $('insert').onclick = async () => {
+        const origin = trimOrigin();
+        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        const id = $('storyPick').value;
+        if (!id) return setStatus('Pick a story first (↻ to load).', true);
+        setStatus('Fetching ' + id + '…');
+        try {
+          const res = await fetch(origin + '/artifact?id=' + encodeURIComponent(id));
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const art = await res.json();
+          const story = (art.stories || []).find((s) => s.id === id) || (art.stories || [])[0];
+          if (!story || !story.root) throw new Error('artifact has no root for ' + id);
+          post('insert-node', { node: story.root });
+          setStatus('Inserting ' + id + '…');
+        } catch (e) {
+          setStatus('Insert failed: ' + e.message, true);
+        }
       };
 
       // Pull the committed token set straight from the bridge (GET /tokens/latest)

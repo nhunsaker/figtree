@@ -41,6 +41,13 @@ In the panel:
   creates/updates Figma Variables in a `figtree` collection — so a designer
   never hand-creates them. Idempotent: re-running updates values. (Colors →
   COLOR, `px`/numbers → FLOAT, others → STRING.)
+- **Insert from Storybook** — **↻** loads the captured-component index
+  (`GET /artifacts`, produced by `figtree-seed capture`); pick a story and
+  **Insert** fetches its artifact (`GET /artifact?id=…`) and materializes the
+  `LayerNode` tree into real Figma nodes (frames/text, auto-layout, fills,
+  strokes, radius, shadow), **binding** any value that carried a token to the
+  matching Variable in the `figtree` collection. Fonts load with graceful
+  fallback. Run **Sync Variables** first so the Variables exist to bind to.
 - **Open PR…** merges your edits onto the committed token set, copies the
   full `tokens.json` to your clipboard, and opens the GitHub web editor for
   the **GitHub file** above. Paste (⌘A → paste) → *Commit changes…* →

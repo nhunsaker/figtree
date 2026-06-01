@@ -120,11 +120,149 @@ async function syncVariables(tokens) {
   return { created, updated, skipped, collection: COLLECTION };
 }
 
+// ─── Materialize a captured LayerNode → Figma nodes, binding tokens ──────────
+
+// name → Variable, for the `figtree` collection synced from code.
+async function figtreeVarMap() {
+  const cols = await figma.variables.getLocalVariableCollectionsAsync();
+  const col = cols.find((c) => c.name === 'figtree');
+  const map = new Map();
+  if (col) {
+    const vars = await figma.variables.getLocalVariablesAsync();
+    for (const v of vars) if (v.variableCollectionId === col.id) map.set(v.name, v);
+  }
+  return map;
+}
+
+const WEIGHT_STYLE = {
+  100: 'Thin', 200: 'Extra Light', 300: 'Light', 400: 'Regular',
+  500: 'Medium', 600: 'Semi Bold', 700: 'Bold', 800: 'Extra Bold', 900: 'Black',
+};
+const styleForWeight = (weight, italic) => {
+  const base = WEIGHT_STYLE[Math.round((weight || 400) / 100) * 100] || 'Regular';
+  if (!italic) return base;
+  return base === 'Regular' ? 'Italic' : base + ' Italic';
+};
+
+// Load the best available font; degrade gracefully so setCharacters never throws.
+async function loadFontSafe(family, style) {
+  const tries = [
+    { family, style },
+    { family, style: 'Regular' },
+    { family: 'Inter', style: 'Regular' },
+    { family: 'Roboto', style: 'Regular' },
+  ];
+  for (const f of tries) {
+    try { await figma.loadFontAsync(f); return f; } catch {}
+  }
+  return { family: 'Roboto', style: 'Regular' };
+}
+
+const cleanPaint = (p) => ({
+  type: 'SOLID',
+  color: { r: p.color.r, g: p.color.g, b: p.color.b },
+  opacity: p.opacity == null ? 1 : p.opacity,
+});
+
+const bindPaint = (paint, varMap, tokenName) => {
+  const v = tokenName && varMap.get(tokenName);
+  if (!v) return paint;
+  try { return figma.variables.setBoundVariableForPaint(paint, 'color', v); } catch { return paint; }
+};
+
+async function materialize(node, varMap) {
+  const tokens = (node.figtree && node.figtree.tokens) || {};
+
+  if (node.type === 'TEXT') {
+    const t = figma.createText();
+    t.fontName = await loadFontSafe(node.fontFamily || 'Inter', styleForWeight(node.fontWeight, node.italic));
+    t.characters = node.characters || '';
+    if (node.fontSize) t.fontSize = node.fontSize;
+    if (node.letterSpacing != null) t.letterSpacing = { unit: 'PIXELS', value: node.letterSpacing };
+    if (node.lineHeight) {
+      t.lineHeight = node.lineHeight.unit === 'PIXELS'
+        ? { unit: 'PIXELS', value: node.lineHeight.value }
+        : { unit: 'AUTO' };
+    }
+    if (node.textAlign) t.textAlignHorizontal = node.textAlign;
+    if (node.fills && node.fills[0]) t.fills = [bindPaint(cleanPaint(node.fills[0]), varMap, tokens.fill)];
+    t.name = node.name || 'text';
+    return t;
+  }
+
+  const f = figma.createFrame();
+  f.name = node.name || 'frame';
+  f.fills = node.fills && node.fills[0] ? [bindPaint(cleanPaint(node.fills[0]), varMap, tokens.fill)] : [];
+  if (node.strokes && node.strokes[0]) {
+    f.strokes = [bindPaint(cleanPaint(node.strokes[0]), varMap, tokens.stroke)];
+    if (node.strokeWeight) f.strokeWeight = node.strokeWeight;
+  }
+  if (typeof node.cornerRadius === 'number') {
+    f.cornerRadius = node.cornerRadius;
+    const v = tokens.cornerRadius && varMap.get(tokens.cornerRadius);
+    if (v) for (const field of ['topLeftRadius', 'topRightRadius', 'bottomRightRadius', 'bottomLeftRadius']) {
+      try { f.setBoundVariable(field, v); } catch {}
+    }
+  } else if (Array.isArray(node.cornerRadius)) {
+    const [tl, tr, br, bl] = node.cornerRadius;
+    f.topLeftRadius = tl; f.topRightRadius = tr; f.bottomRightRadius = br; f.bottomLeftRadius = bl;
+  }
+  if (Array.isArray(node.effects) && node.effects.length) {
+    f.effects = node.effects.map((e) => ({
+      type: e.type, visible: true, blendMode: 'NORMAL',
+      radius: e.radius || 0, spread: e.spread || 0,
+      offset: e.offset || { x: 0, y: 0 },
+      color: {
+        r: e.color.color.r, g: e.color.color.g, b: e.color.color.b,
+        a: e.color.opacity == null ? 1 : e.color.opacity,
+      },
+    }));
+  }
+  if (node.opacity != null) f.opacity = node.opacity;
+  f.clipsContent = !!node.clipsContent;
+
+  const auto = node.layout && node.layout.mode && node.layout.mode !== 'NONE';
+  if (auto) {
+    f.layoutMode = node.layout.mode;
+    f.primaryAxisAlignItems = node.layout.primaryAxisAlign || 'MIN';
+    f.counterAxisAlignItems = node.layout.counterAxisAlign || 'MIN';
+    f.itemSpacing = node.layout.itemSpacing || 0;
+    f.paddingTop = node.layout.paddingTop || 0;
+    f.paddingRight = node.layout.paddingRight || 0;
+    f.paddingBottom = node.layout.paddingBottom || 0;
+    f.paddingLeft = node.layout.paddingLeft || 0;
+  } else if (node.width && node.height) {
+    f.resize(node.width, node.height);
+  }
+
+  for (const child of node.children || []) {
+    const c = await materialize(child, varMap);
+    f.appendChild(c);
+    if (!auto) { c.x = child.x || 0; c.y = child.y || 0; }
+  }
+  return f;
+}
+
+async function insertNode(root) {
+  const varMap = await figtreeVarMap();
+  const node = await materialize(root, varMap);
+  figma.currentPage.appendChild(node);
+  node.x = Math.round(figma.viewport.center.x - node.width / 2);
+  node.y = Math.round(figma.viewport.center.y - node.height / 2);
+  figma.currentPage.selection = [node];
+  figma.viewport.scrollAndZoomIntoView([node]);
+}
+
 figma.ui.onmessage = (msg) => {
   if (msg.type === 'reload-tokens') sendTokens();
   else if (msg.type === 'sync-variables') {
     syncVariables(msg.tokens)
       .then((r) => figma.ui.postMessage({ type: 'sync-result', ...r }))
+      .catch((err) => figma.ui.postMessage({ type: 'error', message: String(err) }));
+  }
+  else if (msg.type === 'insert-node') {
+    insertNode(msg.node)
+      .then(() => figma.ui.postMessage({ type: 'insert-result', ok: true }))
       .catch((err) => figma.ui.postMessage({ type: 'error', message: String(err) }));
   }
   else if (msg.type === 'notify') figma.notify(msg.message);
