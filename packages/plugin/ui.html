@@ -9,13 +9,13 @@
       /* ── toolbar ────────────────────────────────────────────────────── */
       .toolbar {
         display: flex; align-items: center; justify-content: space-between;
-        background: #2d2d2d; padding: 6px 10px; gap: 4px;
-        border-bottom: 1px solid #1a1a1a;
+        background: #2d2d2d; padding: 5px 8px; gap: 2px;
+        border-bottom: 1px solid #1a1a1a; overflow: hidden;
       }
-      .tb-group { display: flex; align-items: center; gap: 2px; }
+      .tb-group { display: flex; align-items: center; gap: 1px; flex-shrink: 0; }
       .tb-btn {
         display: flex; align-items: center; justify-content: center;
-        width: 30px; height: 30px; border: 0; border-radius: 6px;
+        width: 26px; height: 26px; border: 0; border-radius: 5px;
         background: transparent; color: #ffffff; cursor: pointer; padding: 0;
         position: relative; flex-shrink: 0;
       }
@@ -28,13 +28,13 @@
       /* tooltip */
       .tb-btn::after {
         content: attr(data-tip); pointer-events: none; opacity: 0;
-        position: absolute; top: 34px; left: 50%; transform: translateX(-50%);
+        position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
         background: #1a1a1a; color: #fff; font-size: 10px; white-space: nowrap;
         padding: 3px 6px; border-radius: 4px; z-index: 99;
         transition: opacity 0.15s;
       }
       .tb-btn:hover::after { opacity: 1; }
-      .tb-divider { width: 1px; height: 18px; background: #444; margin: 0 3px; }
+      .tb-divider { width: 1px; height: 16px; background: #444; margin: 0 2px; }
       /* back button — shown only when settings open */
       .tb-back { display: none; }
 
@@ -100,7 +100,7 @@
         <button class="tb-btn" id="tb-preview" data-tip="Preview in app">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/></svg>
         </button>
-        <button class="tb-btn" disabled data-tip="Preview in Storybook">
+        <button class="tb-btn" id="tb-preview-storybook" data-tip="Preview in Storybook">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/></svg>
         </button>
         <button class="tb-btn" id="tb-syncvars" data-tip="Reload from Storybook">
@@ -159,6 +159,9 @@
       <label>App URL <span class="hint">(page to open with the preview)</span></label>
       <input id="appUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/campaign" />
 
+      <label>Storybook URL <span class="hint">(base URL — preview param appended on click)</span></label>
+      <input id="storybookUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/storybook/" />
+
       <label>GitHub file <span class="hint">(edit URL of tokens.json on the target branch)</span></label>
       <input id="githubUrl" placeholder="https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json" />
     </div>
@@ -188,6 +191,33 @@
       $('tb-preview').onclick  = () => $('preview').click();
       $('tb-syncvars').onclick = () => $('syncvars').click();
 
+      // Preview in Storybook — POSTs current tokens to /preview then opens
+      // the Storybook URL with ?preview=<id> appended, same as Preview in app.
+      $('tb-preview-storybook').onclick = async () => {
+        var body;
+        try { body = JSON.parse($('tokens').value); }
+        catch (e) { return setStatus('Tokens must be valid JSON.', true); }
+        const origin = trimOrigin();
+        const sbUrl = $('storybookUrl').value.trim().replace(/\/$/, '');
+        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
+        if (!sbUrl)  return setStatus('Set Storybook URL in Settings.', true);
+        setStatus('Posting preview…');
+        try {
+          const res = await fetch(origin + '/preview', {
+            method: 'POST', headers: { 'content-type': 'text/plain' },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          const url = sbUrl + (sbUrl.includes('?') ? '&' : '?') + 'preview=' + data.id;
+          window.open(url, '_blank');
+          post('notify', { message: 'Storybook preview: ' + data.id });
+          setStatus('Storybook preview <b>' + data.id + '</b> opened. <a href="' + url + '" target="_blank">Open ↗</a>');
+        } catch (e) {
+          setStatus('Preview failed: ' + e.message, true);
+        }
+      };
+
       // ── status (main view only) ────────────────────────────────────────
       const setStatus = (html, isErr) => {
         const el = $('status');
@@ -196,21 +226,24 @@
       };
 
       // ── persisted settings ────────────────────────────────────────────
-      const LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl' };
+      const LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl', sb: 'figtree.storybookUrl' };
       const lsGet = (k) => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
       const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
       const DEFAULT_ORIGIN = 'https://callout-admin-ui.dev.buzzfeed.io/figtree';
       const DEFAULT_APP    = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
       const DEFAULT_GH     = 'https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json';
+      const DEFAULT_SB     = 'https://callout-admin-ui.dev.buzzfeed.io/storybook/';
 
-      $('origin').value    = lsGet(LS.origin) || DEFAULT_ORIGIN;
-      $('appUrl').value    = lsGet(LS.app)    || DEFAULT_APP;
-      $('githubUrl').value = lsGet(LS.gh)     || DEFAULT_GH;
+      $('origin').value       = lsGet(LS.origin) || DEFAULT_ORIGIN;
+      $('appUrl').value       = lsGet(LS.app)    || DEFAULT_APP;
+      $('githubUrl').value    = lsGet(LS.gh)     || DEFAULT_GH;
+      $('storybookUrl').value = lsGet(LS.sb)     || DEFAULT_SB;
 
-      $('origin').addEventListener('change',    (e) => lsSet(LS.origin, e.target.value));
-      $('appUrl').addEventListener('change',    (e) => lsSet(LS.app,    e.target.value));
-      $('githubUrl').addEventListener('change', (e) => lsSet(LS.gh,     e.target.value));
+      $('origin').addEventListener('change',       (e) => lsSet(LS.origin, e.target.value));
+      $('appUrl').addEventListener('change',       (e) => lsSet(LS.app,    e.target.value));
+      $('githubUrl').addEventListener('change',    (e) => lsSet(LS.gh,     e.target.value));
+      $('storybookUrl').addEventListener('change', (e) => lsSet(LS.sb,     e.target.value));
 
       const trimOrigin = () => $('origin').value.trim().replace(/\/$/, '');
 
