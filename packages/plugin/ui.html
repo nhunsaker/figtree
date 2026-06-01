@@ -9,21 +9,22 @@
       /* ── toolbar ────────────────────────────────────────────────────── */
       .toolbar {
         display: flex; align-items: center; justify-content: space-between;
-        background: #c0341d; padding: 7px 10px; gap: 6px;
+        background: #2d2d2d; padding: 6px 10px; gap: 4px;
+        border-bottom: 1px solid #1a1a1a;
       }
       .tb-group { display: flex; align-items: center; gap: 2px; }
       .tb-btn {
         display: flex; align-items: center; justify-content: center;
-        width: 28px; height: 28px; border: 0; border-radius: 6px;
-        background: transparent; color: #fff; cursor: pointer; padding: 0;
+        width: 30px; height: 30px; border: 0; border-radius: 6px;
+        background: transparent; color: #aaaaaa; cursor: pointer; padding: 0;
         position: relative; flex-shrink: 0;
       }
       .tb-btn svg { display: block; pointer-events: none; }
-      .tb-btn:hover { background: rgba(255,255,255,0.18); }
-      .tb-btn:active { background: rgba(255,255,255,0.32); }
-      .tb-btn.active { background: rgba(255,255,255,0.25); }
-      .tb-btn[disabled] { opacity: 0.4; cursor: default; }
-      .tb-btn[disabled]:hover { background: transparent; }
+      .tb-btn:hover { background: #3d3d3d; color: #ffffff; }
+      .tb-btn:active { background: #4d4d4d; color: #ffffff; }
+      .tb-btn.active { background: #3d3d3d; color: #ffffff; }
+      .tb-btn[disabled] { opacity: 0.3; cursor: default; }
+      .tb-btn[disabled]:hover { background: transparent; color: #aaaaaa; }
       /* tooltip */
       .tb-btn::after {
         content: attr(data-tip); pointer-events: none; opacity: 0;
@@ -33,7 +34,7 @@
         transition: opacity 0.15s;
       }
       .tb-btn:hover::after { opacity: 1; }
-      .tb-divider { width: 1px; height: 18px; background: rgba(255,255,255,0.25); margin: 0 4px; }
+      .tb-divider { width: 1px; height: 18px; background: #444; margin: 0 3px; }
       /* back button — shown only when settings open */
       .tb-back { display: none; }
 
@@ -124,16 +125,13 @@
       <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
       <textarea id="tokens">{}</textarea>
 
-      <div class="row">
-        <button class="secondary" id="reload">Reload from Figma</button>
-        <button class="secondary" id="committed">Load committed</button>
-      </div>
-      <div class="row">
-        <button class="primary" id="preview">Preview in app →</button>
-      </div>
-      <div class="row">
-        <button class="secondary" id="openpr">Open PR…</button>
-        <button class="secondary" id="syncvars">Sync Variables</button>
+      <!-- hidden action buttons — kept for click handlers, triggered by toolbar -->
+      <div style="display:none;">
+        <button id="reload">Reload from Figma</button>
+        <button id="committed">Load committed</button>
+        <button id="preview">Preview in app</button>
+        <button id="openpr">Open PR</button>
+        <button id="syncvars">Sync Variables</button>
       </div>
 
       <label>Insert from Storybook <span class="hint">(captured components)</span></label>
