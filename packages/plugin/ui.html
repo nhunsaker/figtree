@@ -4,13 +4,15 @@
     <meta charset="utf-8" />
     <style>
       :root { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 12px; }
-      body { margin: 0; color: #1a1a1a; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #1a1a1a; overflow-x: hidden; }
 
       /* ── toolbar ────────────────────────────────────────────────────── */
       .toolbar {
         display: flex; align-items: center; justify-content: space-between;
-        background: #2d2d2d; padding: 5px 8px; gap: 2px;
-        border-bottom: 1px solid #1a1a1a; overflow: hidden;
+        background: #2d2d2d; padding: 5px 8px;
+        border-bottom: 1px solid #1a1a1a;
+        width: 100%; overflow: hidden;
       }
       .tb-group { display: flex; align-items: center; gap: 1px; flex-shrink: 0; }
       .tb-btn {
@@ -22,39 +24,32 @@
       .tb-btn svg { display: block; pointer-events: none; }
       .tb-btn:hover { background: #3d3d3d; color: #7dd3fc; }
       .tb-btn:active { background: #4d4d4d; color: #38bdf8; }
-      .tb-btn.active { background: #3d3d3d; color: #7dd3fc; }
+      .tb-btn.active { background: #1e3a5f; color: #7dd3fc; }
       .tb-btn[disabled] { opacity: 0.3; cursor: default; }
       .tb-btn[disabled]:hover { background: transparent; color: #ffffff; }
-      /* tooltip */
+      /* tooltip — clipped by parent overflow:hidden, so use fixed positioning trick */
       .tb-btn::after {
         content: attr(data-tip); pointer-events: none; opacity: 0;
-        position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+        position: fixed; top: auto; left: auto;
+        margin-top: 31px;
         background: #1a1a1a; color: #fff; font-size: 10px; white-space: nowrap;
-        padding: 3px 6px; border-radius: 4px; z-index: 99;
+        padding: 3px 6px; border-radius: 4px; z-index: 9999;
         transition: opacity 0.15s;
       }
       .tb-btn:hover::after { opacity: 1; }
-      .tb-divider { width: 1px; height: 16px; background: #444; margin: 0 2px; }
-      /* back button — shown only when settings open */
-      .tb-back { display: none; }
+      .tb-divider { width: 1px; height: 16px; background: #444; margin: 0 2px; flex-shrink: 0; }
 
       /* ── views ─────────────────────────────────────────────────────── */
       .view { display: none; padding: 14px; }
       .view.active { display: block; }
 
-      /* ── view header (title only, settings link removed) ─────────────── */
-      .header { margin: 0 0 12px; }
-      .header h1 { font-size: 13px; margin: 0; }
-
-      /* ── settings view ───────────────────────────────────────────────── */
-      .settings-note {
-        font-size: 11px; color: #888; margin: -4px 0 12px;
-        line-height: 1.5;
-      }
+      /* ── settings note ────────────────────────────────────────────── */
+      .settings-note { font-size: 11px; color: #888; margin: 0 0 12px; line-height: 1.5; }
 
       label { display: block; font-weight: 600; margin: 10px 0 4px; }
+      label:first-child { margin-top: 0; }
       input, textarea, select {
-        width: 100%; box-sizing: border-box; border: 1px solid #d9d9d9;
+        width: 100%; border: 1px solid #d9d9d9;
         border-radius: 6px; padding: 7px 8px; font-size: 12px; font-family: inherit;
       }
       textarea { height: 230px; font-family: ui-monospace, Menlo, monospace; resize: vertical; }
@@ -74,16 +69,14 @@
   <body>
 
     <!-- ── TOOLBAR (always visible) ──────────────────────────────────── -->
-    <div class="toolbar" id="toolbar">
-      <!-- left: context labels -->
+    <div class="toolbar">
+
+      <!-- left: view tabs -->
       <div class="tb-group">
-        <button class="tb-btn" id="tb-back" data-tip="Back" style="display:none;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0m3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5z"/></svg>
-        </button>
-        <button class="tb-btn" disabled data-tip="Tokens">
+        <button class="tb-btn active" id="tb-nav-tokens" data-tip="Tokens">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.114 8.063V7.9c1.005-.102 1.497-.615 1.497-1.6V4.503c0-1.094.39-1.538 1.354-1.538h.273V2h-.376C2.25 2 1.49 2.759 1.49 4.352v1.524c0 1.094-.376 1.456-1.49 1.456v1.299c1.114 0 1.49.362 1.49 1.456v1.524c0 1.593.759 2.352 2.372 2.352h.376v-.964h-.273c-.964 0-1.354-.444-1.354-1.538V9.663c0-.984-.492-1.497-1.497-1.6M14.886 7.9v.164c-1.005.103-1.497.616-1.497 1.6v1.798c0 1.094-.39 1.538-1.354 1.538h-.273v.964h.376c1.613 0 2.372-.759 2.372-2.352v-1.524c0-1.094.376-1.456 1.49-1.456v-1.3c-1.114 0-1.49-.362-1.49-1.456V4.352C14.51 2.759 13.75 2 12.138 2h-.376v.964h.273c.964 0 1.354.444 1.354 1.538V6.3c0 .984.492 1.497 1.497 1.6M7.5 11.5V9.207l-1.621 1.621-.707-.707L6.792 8.5H4.5v-1h2.293L5.172 5.879l.707-.707L7.5 6.792V4.5h1v2.293l1.621-1.621.707.707L9.208 7.5H11.5v1H9.207l1.621 1.621-.707.707L8.5 9.208V11.5z"/></svg>
         </button>
-        <button class="tb-btn" disabled data-tip="Storybook">
+        <button class="tb-btn" id="tb-nav-storybook" data-tip="Storybook">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/></svg>
         </button>
       </div>
@@ -108,24 +101,20 @@
         </button>
       </div>
 
-      <!-- right: settings -->
+      <!-- right: settings tab -->
       <div class="tb-group">
-        <button class="tb-btn" id="tb-settings" data-tip="Settings">
+        <button class="tb-btn" id="tb-nav-settings" data-tip="Settings">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/></svg>
         </button>
       </div>
     </div>
 
-    <!-- ── MAIN VIEW ─────────────────────────────────────────────────── -->
-    <div id="view-main" class="view active">
-      <div class="header">
-        <h1>Figtree — preview tokens</h1>
-      </div>
-
+    <!-- ── TOKENS VIEW ─────────────────────────────────────────────────── -->
+    <div id="view-tokens" class="view active">
       <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
       <textarea id="tokens">{}</textarea>
 
-      <!-- hidden action buttons — kept for click handlers, triggered by toolbar -->
+      <!-- hidden action buttons — click handlers delegated from toolbar -->
       <div style="display:none;">
         <button id="reload">Reload from Figma</button>
         <button id="committed">Load committed</button>
@@ -134,24 +123,26 @@
         <button id="syncvars">Sync Variables</button>
       </div>
 
+      <div class="status" id="status"></div>
+    </div>
+
+    <!-- ── STORYBOOK VIEW ─────────────────────────────────────────────── -->
+    <div id="view-storybook" class="view">
       <label>Insert from Storybook <span class="hint">(captured components)</span></label>
-      <div class="row">
+      <div class="row" style="margin-top:4px;">
         <select id="storyPick" style="flex:3;"></select>
-        <button class="secondary" id="loadStories" style="flex:0 0 32px;padding:9px 6px;" title="Refresh story list">↻</button>
+        <button class="secondary" id="loadStories" style="flex:0 0 32px;padding:9px 6px;" title="Refresh story list">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
+        </button>
         <button class="primary" id="insert" style="flex:1.2;">Insert</button>
       </div>
 
-      <div class="status" id="status"></div>
+      <div class="status" id="status-sb"></div>
     </div>
 
     <!-- ── SETTINGS VIEW ─────────────────────────────────────────────── -->
     <div id="view-settings" class="view">
-      <div class="header">
-        <h1>Settings</h1>
-      </div>
-      <p class="settings-note">
-        These values are saved locally in your browser between sessions.
-      </p>
+      <p class="settings-note">Saved locally between sessions.</p>
 
       <label>Bridge origin <span class="hint">(where <code>figtree dev</code> is reachable)</span></label>
       <input id="origin" placeholder="https://callout-admin-ui.dev.buzzfeed.io/figtree" />
@@ -171,268 +162,250 @@
       style="position:absolute;left:-9999px;top:-9999px;height:1px;"></textarea>
 
     <script>
-      const $ = (id) => document.getElementById(id);
+      var $ = function(id) { return document.getElementById(id); };
 
-      // ── view switching ────────────────────────────────────────────────
-      const showView = (id) => {
-        document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
-        $(id).classList.add('active');
-        // show back button and highlight settings gear when not on main view
-        const onMain = id === 'view-main';
-        $('tb-back').style.display     = onMain ? 'none' : 'flex';
-        $('tb-settings').classList.toggle('active', !onMain);
-      };
-      $('tb-settings').onclick = () => showView('view-settings');
-      $('tb-back').onclick     = () => showView('view-main');
+      // ── view switching (3 tabs: tokens / storybook / settings) ─────────
+      var VIEWS = { tokens: 'view-tokens', storybook: 'view-storybook', settings: 'view-settings' };
+      var NAV   = { tokens: 'tb-nav-tokens', storybook: 'tb-nav-storybook', settings: 'tb-nav-settings' };
 
-      // ── toolbar action wiring ─────────────────────────────────────────
-      $('tb-import').onclick   = () => $('committed').click();
-      $('tb-export').onclick   = () => $('reload').click();
-      $('tb-preview').onclick  = () => $('preview').click();
-      $('tb-syncvars').onclick = () => $('syncvars').click();
-
-      // Preview in Storybook — POSTs current tokens to /preview then opens
-      // the Storybook URL with ?preview=<id> appended, same as Preview in app.
-      $('tb-preview-storybook').onclick = async () => {
-        var body;
-        try { body = JSON.parse($('tokens').value); }
-        catch (e) { return setStatus('Tokens must be valid JSON.', true); }
-        const origin = trimOrigin();
-        const sbUrl = $('storybookUrl').value.trim().replace(/\/$/, '');
-        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
-        if (!sbUrl)  return setStatus('Set Storybook URL in Settings.', true);
-        setStatus('Posting preview…');
-        try {
-          const res = await fetch(origin + '/preview', {
-            method: 'POST', headers: { 'content-type': 'text/plain' },
-            body: JSON.stringify(body),
-          });
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const data = await res.json();
-          const url = sbUrl + (sbUrl.includes('?') ? '&' : '?') + 'preview=' + data.id;
-          window.open(url, '_blank');
-          post('notify', { message: 'Storybook preview: ' + data.id });
-          setStatus('Storybook preview <b>' + data.id + '</b> opened. <a href="' + url + '" target="_blank">Open ↗</a>');
-        } catch (e) {
-          setStatus('Preview failed: ' + e.message, true);
+      function showView(key) {
+        var vids = Object.values(VIEWS);
+        for (var i = 0; i < vids.length; i++) {
+          var v = $(vids[i]);
+          if (v) v.style.display = vids[i] === VIEWS[key] ? 'block' : 'none';
         }
-      };
+        var nids = Object.values(NAV);
+        for (var j = 0; j < nids.length; j++) {
+          var n = $(nids[j]);
+          if (n) n.classList.toggle('active', nids[j] === NAV[key]);
+        }
+        // auto-load stories when switching to storybook tab
+        if (key === 'storybook') loadStories();
+      }
 
-      // ── status (main view only) ────────────────────────────────────────
-      const setStatus = (html, isErr) => {
-        const el = $('status');
+      $('tb-nav-tokens').onclick   = function() { showView('tokens'); };
+      $('tb-nav-storybook').onclick = function() { showView('storybook'); };
+      $('tb-nav-settings').onclick  = function() { showView('settings'); };
+
+      // ── status helpers (tokens view / storybook view) ──────────────────
+      function setStatus(html, isErr) {
+        var el = $('status');
         el.className = 'status' + (isErr ? ' err' : '');
         el.innerHTML = html;
-      };
+      }
+      function setSbStatus(html, isErr) {
+        var el = $('status-sb');
+        el.className = 'status' + (isErr ? ' err' : '');
+        el.innerHTML = html;
+      }
 
-      // ── persisted settings ────────────────────────────────────────────
-      const LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl', sb: 'figtree.storybookUrl' };
-      const lsGet = (k) => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
-      const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+      // ── persisted settings ─────────────────────────────────────────────
+      var LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl', sb: 'figtree.storybookUrl' };
+      function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
+      function lsSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
 
-      const DEFAULT_ORIGIN = 'https://callout-admin-ui.dev.buzzfeed.io/figtree';
-      const DEFAULT_APP    = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
-      const DEFAULT_GH     = 'https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json';
-      const DEFAULT_SB     = 'https://callout-admin-ui.dev.buzzfeed.io/storybook/';
+      var DEFAULT_ORIGIN = 'https://callout-admin-ui.dev.buzzfeed.io/figtree';
+      var DEFAULT_APP    = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
+      var DEFAULT_GH     = 'https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json';
+      var DEFAULT_SB     = 'https://callout-admin-ui.dev.buzzfeed.io/storybook/';
 
       $('origin').value       = lsGet(LS.origin) || DEFAULT_ORIGIN;
       $('appUrl').value       = lsGet(LS.app)    || DEFAULT_APP;
       $('githubUrl').value    = lsGet(LS.gh)     || DEFAULT_GH;
       $('storybookUrl').value = lsGet(LS.sb)     || DEFAULT_SB;
 
-      $('origin').addEventListener('change',       (e) => lsSet(LS.origin, e.target.value));
-      $('appUrl').addEventListener('change',       (e) => lsSet(LS.app,    e.target.value));
-      $('githubUrl').addEventListener('change',    (e) => lsSet(LS.gh,     e.target.value));
-      $('storybookUrl').addEventListener('change', (e) => lsSet(LS.sb,     e.target.value));
+      $('origin').addEventListener('change',       function(e) { lsSet(LS.origin, e.target.value); });
+      $('appUrl').addEventListener('change',       function(e) { lsSet(LS.app,    e.target.value); });
+      $('githubUrl').addEventListener('change',    function(e) { lsSet(LS.gh,     e.target.value); });
+      $('storybookUrl').addEventListener('change', function(e) { lsSet(LS.sb,     e.target.value); });
 
-      const trimOrigin = () => $('origin').value.trim().replace(/\/$/, '');
+      function trimOrigin() { return $('origin').value.trim().replace(/\/$/, ''); }
 
       // ── messages from main thread ──────────────────────────────────────
-      onmessage = (event) => {
-        const msg = event.data.pluginMessage;
+      onmessage = function(event) {
+        var msg = event.data.pluginMessage;
         if (!msg) return;
         if (msg.type === 'tokens') {
           $('tokens').value = JSON.stringify(msg.tokens, null, 2);
           setStatus(Object.keys(msg.tokens).length + ' token(s) loaded from Figma Variables.');
         } else if (msg.type === 'sync-result') {
-          setStatus(
-            '✓ Variables synced — <b>' + msg.created + '</b> created, ' + msg.updated + ' updated' +
-            (msg.skipped ? ', ' + msg.skipped + ' skipped' : '') +
-            ' (collection "' + msg.collection + '").'
-          );
+          setStatus('✓ Variables synced — <b>' + msg.created + '</b> created, ' + msg.updated + ' updated' +
+            (msg.skipped ? ', ' + msg.skipped + ' skipped' : '') + ' (collection "' + msg.collection + '").');
         } else if (msg.type === 'insert-result') {
-          setStatus('✓ Inserted into the canvas.');
+          setSbStatus('✓ Inserted into the canvas.');
         } else if (msg.type === 'error') {
           setStatus('Plugin error: ' + msg.message, true);
         }
       };
 
-      const post = (type, extra) =>
+      function post(type, extra) {
         parent.postMessage({ pluginMessage: Object.assign({ type: type }, extra) }, '*');
+      }
+
+      // ── toolbar action wiring ──────────────────────────────────────────
+      $('tb-import').onclick   = function() { $('committed').click(); };
+      $('tb-export').onclick   = function() { $('reload').click(); };
+      $('tb-preview').onclick  = function() { $('preview').click(); };
+      $('tb-syncvars').onclick = function() { $('syncvars').click(); };
 
       // ── Reload from Figma ──────────────────────────────────────────────
-      $('reload').onclick = () => post('reload-tokens');
+      $('reload').onclick = function() { post('reload-tokens'); };
 
       // ── Sync Variables from code ───────────────────────────────────────
-      $('syncvars').onclick = async () => {
-        const origin = trimOrigin();
+      $('syncvars').onclick = async function() {
+        var origin = trimOrigin();
         if (!origin) return setStatus('Set Bridge origin in Settings.', true);
         setStatus('Fetching resolved tokens…');
         var tokens;
         try {
-          const res = await fetch(origin + '/tokens/resolved');
+          var res = await fetch(origin + '/tokens/resolved');
           if (!res.ok) throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed resolve` first' : ''));
-          const data = await res.json();
+          var data = await res.json();
           tokens = Array.isArray(data) ? data : data.tokens;
-        } catch (e) {
-          return setStatus('Failed to load resolved tokens: ' + e.message, true);
-        }
+        } catch(e) { return setStatus('Failed to load resolved tokens: ' + e.message, true); }
         if (!tokens || !tokens.length) return setStatus('Resolved token map is empty.', true);
         post('sync-variables', { tokens: tokens });
         setStatus('Creating Figma Variables from ' + tokens.length + ' tokens…');
       };
 
-      // ── Load story list ────────────────────────────────────────────────
-      const loadStories = async () => {
-        const origin = trimOrigin();
-        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
-        try {
-          const res = await fetch(origin + '/artifacts');
-          if (!res.ok) throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed capture` first' : ''));
-          const idx = await res.json();
-          const stories = idx.stories || {};
-          const ids = Object.keys(stories);
-          const sel = $('storyPick');
-          sel.innerHTML = '';
-          if (!ids.length) return setStatus('No captured stories in the index.', true);
-          for (var i = 0; i < ids.length; i++) {
-            const o = document.createElement('option');
-            o.value = ids[i];
-            const s = stories[ids[i]];
-            o.textContent = (s.component || '') + ' / ' + (s.name || ids[i]);
-            sel.appendChild(o);
-          }
-          setStatus(ids.length + ' captured stor' + (ids.length === 1 ? 'y' : 'ies') + ' loaded.');
-        } catch (e) {
-          setStatus('Failed to load stories: ' + e.message, true);
-        }
-      };
-      $('loadStories').onclick = loadStories;
-      // auto-load on open
-      loadStories();
-
-      // ── Insert from Storybook ──────────────────────────────────────────
-      $('insert').onclick = async () => {
-        const origin = trimOrigin();
-        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
-        const id = $('storyPick').value;
-        if (!id) return setStatus('No stories loaded — click ↻ to refresh.', true);
-        setStatus('Fetching ' + id + '…');
-        try {
-          const res = await fetch(origin + '/artifact?id=' + encodeURIComponent(id));
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const art = await res.json();
-          const story = (art.stories || []).find(function(s) { return s.id === id; }) || (art.stories || [])[0];
-          if (!story || !story.root) throw new Error('artifact has no root for ' + id);
-          post('insert-node', { node: story.root });
-          setStatus('Inserting ' + id + '…');
-        } catch (e) {
-          setStatus('Insert failed: ' + e.message, true);
-        }
-      };
-
       // ── Load committed tokens ──────────────────────────────────────────
-      $('committed').onclick = async () => {
-        const origin = trimOrigin();
+      $('committed').onclick = async function() {
+        var origin = trimOrigin();
         if (!origin) return setStatus('Set Bridge origin in Settings.', true);
         try {
-          const res = await fetch(origin + '/tokens/latest');
+          var res = await fetch(origin + '/tokens/latest');
           if (!res.ok) throw new Error('HTTP ' + res.status);
           $('tokens').value = JSON.stringify(await res.json(), null, 2);
           setStatus('Loaded committed tokens from the bridge.');
-        } catch (e) {
-          setStatus('Failed to load committed tokens: ' + e.message, true);
-        }
+        } catch(e) { setStatus('Failed to load committed tokens: ' + e.message, true); }
       };
 
       // ── Preview in app ─────────────────────────────────────────────────
-      $('preview').onclick = async () => {
+      $('preview').onclick = async function() {
         var body;
-        try {
-          body = JSON.parse($('tokens').value);
-        } catch (e) {
-          return setStatus('Tokens must be valid JSON.', true);
-        }
-        const origin = trimOrigin();
-        const appUrl = $('appUrl').value.trim();
+        try { body = JSON.parse($('tokens').value); }
+        catch(e) { return setStatus('Tokens must be valid JSON.', true); }
+        var origin = trimOrigin();
+        var appUrl = $('appUrl').value.trim();
         if (!origin || !appUrl) return setStatus('Set Bridge origin and App URL in Settings.', true);
         setStatus('Posting preview…');
         try {
-          const res = await fetch(origin + '/preview', {
-            method: 'POST',
-            headers: { 'content-type': 'text/plain' },
+          var res = await fetch(origin + '/preview', {
+            method: 'POST', headers: { 'content-type': 'text/plain' },
             body: JSON.stringify(body),
           });
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          const data = await res.json();
-          const id = data.id;
-          const sep = appUrl.includes('?') ? '&' : '?';
-          const url = appUrl + sep + 'preview=' + id;
+          var d = await res.json();
+          var url = appUrl + (appUrl.includes('?') ? '&' : '?') + 'preview=' + d.id;
           window.open(url, '_blank');
-          post('notify', { message: 'Preview ready: ' + id });
-          setStatus('Preview <b>' + id + '</b> created. <a href="' + url + '" target="_blank">Open app ↗</a>');
-        } catch (e) {
-          setStatus('Preview failed: ' + e.message + ' (is the bridge running and allowed in manifest?)', true);
-        }
+          post('notify', { message: 'Preview ready: ' + d.id });
+          setStatus('Preview <b>' + d.id + '</b> created. <a href="' + url + '" target="_blank">Open app ↗</a>');
+        } catch(e) { setStatus('Preview failed: ' + e.message, true); }
+      };
+
+      // ── Preview in Storybook ───────────────────────────────────────────
+      $('tb-preview-storybook').onclick = async function() {
+        var body;
+        try { body = JSON.parse($('tokens').value); }
+        catch(e) { return setStatus('Tokens must be valid JSON.', true); }
+        var origin = trimOrigin();
+        var sbUrl  = $('storybookUrl').value.trim().replace(/\/$/, '');
+        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
+        if (!sbUrl)  return setStatus('Set Storybook URL in Settings.', true);
+        setStatus('Posting preview…');
+        try {
+          var res = await fetch(origin + '/preview', {
+            method: 'POST', headers: { 'content-type': 'text/plain' },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          var d = await res.json();
+          var url = sbUrl + (sbUrl.includes('?') ? '&' : '?') + 'preview=' + d.id;
+          window.open(url, '_blank');
+          post('notify', { message: 'Storybook preview: ' + d.id });
+          setStatus('Storybook preview <b>' + d.id + '</b> opened. <a href="' + url + '" target="_blank">Open ↗</a>');
+        } catch(e) { setStatus('Preview failed: ' + e.message, true); }
       };
 
       // ── Open PR ────────────────────────────────────────────────────────
-      $('openpr').onclick = async () => {
+      $('openpr').onclick = async function() {
         var edits;
-        try {
-          edits = JSON.parse($('tokens').value);
-        } catch (e) {
-          return setStatus('Tokens must be valid JSON.', true);
-        }
-        const origin = trimOrigin();
-        const editUrl = $('githubUrl').value.trim();
-        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
+        try { edits = JSON.parse($('tokens').value); }
+        catch(e) { return setStatus('Tokens must be valid JSON.', true); }
+        var origin  = trimOrigin();
+        var editUrl = $('githubUrl').value.trim();
+        if (!origin)  return setStatus('Set Bridge origin in Settings.', true);
         if (!editUrl) return setStatus('Set GitHub file URL in Settings.', true);
-
         setStatus('Merging with committed tokens…');
         var committed;
         try {
-          const res = await fetch(origin + '/tokens/latest');
+          var res = await fetch(origin + '/tokens/latest');
           if (!res.ok) throw new Error('HTTP ' + res.status);
           committed = await res.json();
-        } catch (e) {
-          return setStatus('Could not load committed tokens: ' + e.message, true);
-        }
-
-        const merged = Object.assign({}, committed, edits);
-        const json = JSON.stringify(merged, null, 2) + '\n';
-        const changed = Object.keys(edits).filter(function(k) { return committed[k] !== edits[k]; });
-
+        } catch(e) { return setStatus('Could not load committed tokens: ' + e.message, true); }
+        var merged = Object.assign({}, committed, edits);
+        var json = JSON.stringify(merged, null, 2) + '\n';
+        var changed = Object.keys(edits).filter(function(k) { return committed[k] !== edits[k]; });
         var copied = false;
-        try { await navigator.clipboard.writeText(json); copied = true; } catch (e) {}
+        try { await navigator.clipboard.writeText(json); copied = true; } catch(e) {}
         if (!copied) {
-          try {
-            const buf = $('copybuf');
-            buf.value = json; buf.focus(); buf.select();
-            copied = document.execCommand('copy');
-          } catch (e) {}
+          try { var buf=$('copybuf'); buf.value=json; buf.focus(); buf.select(); copied=document.execCommand('copy'); } catch(e) {}
         }
         if (!copied) $('tokens').value = json;
-
         window.open(editUrl, '_blank');
-        setStatus(
-          (copied
-            ? '✓ Copied <code>tokens.json</code> to clipboard. '
-            : 'Could not auto-copy — merged file is in the Tokens box. ') +
+        setStatus((copied ? '✓ Copied <code>tokens.json</code> to clipboard. ' : 'Could not auto-copy — merged file is in the Tokens box. ') +
           'In GitHub: <b>⌘A → paste → Commit changes… → Propose changes</b>.' +
-          (changed.length ? '<br/>Changed: <b>' + changed.join(', ') + '</b>' : '')
-        );
+          (changed.length ? '<br/>Changed: <b>' + changed.join(', ') + '</b>' : ''));
       };
+
+      // ── Load story list (auto on storybook tab switch) ─────────────────
+      function loadStories() {
+        var origin = trimOrigin();
+        if (!origin) return setSbStatus('Set Bridge origin in Settings.', true);
+        fetch(origin + '/artifacts')
+          .then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed capture` first' : ''));
+            return res.json();
+          })
+          .then(function(idx) {
+            var stories = idx.stories || {};
+            var ids = Object.keys(stories);
+            var sel = $('storyPick');
+            sel.innerHTML = '';
+            if (!ids.length) return setSbStatus('No captured stories. Run `figtree-seed capture`.', true);
+            for (var i = 0; i < ids.length; i++) {
+              var o = document.createElement('option');
+              o.value = ids[i];
+              var s = stories[ids[i]];
+              o.textContent = (s.component || '') + ' / ' + (s.name || ids[i]);
+              sel.appendChild(o);
+            }
+            setSbStatus(ids.length + ' captured stor' + (ids.length === 1 ? 'y' : 'ies') + ' loaded.');
+          })
+          .catch(function(e) { setSbStatus('Failed to load stories: ' + e.message, true); });
+      }
+      $('loadStories').onclick = loadStories;
+
+      // ── Insert from Storybook ──────────────────────────────────────────
+      $('insert').onclick = async function() {
+        var origin = trimOrigin();
+        if (!origin) return setSbStatus('Set Bridge origin in Settings.', true);
+        var id = $('storyPick').value;
+        if (!id) return setSbStatus('No stories loaded — click ↻ to refresh.', true);
+        setSbStatus('Fetching ' + id + '…');
+        try {
+          var res = await fetch(origin + '/artifact?id=' + encodeURIComponent(id));
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          var art = await res.json();
+          var story = (art.stories || []).find(function(s) { return s.id === id; }) || (art.stories || [])[0];
+          if (!story || !story.root) throw new Error('artifact has no root for ' + id);
+          post('insert-node', { node: story.root });
+          setSbStatus('Inserting ' + id + '…');
+        } catch(e) { setSbStatus('Insert failed: ' + e.message, true); }
+      };
+
+      // initialise — show tokens view, views start hidden via CSS (.view { display:none })
+      showView('tokens');
     </script>
   </body>
 </html>
