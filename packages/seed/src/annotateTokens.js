@@ -75,3 +75,23 @@ export const matchDimension = (index, value) => {
   const d = normalizeDimension(value)
   return d == null ? { token: null, candidates: [] } : pick(index.dims.get(d))
 }
+
+// Walk a captured LayerNode tree and attach `figtree.tokens` / `.candidates`
+// to each node whose bindable values match a token. Mutates and returns the
+// tree. (The plugin materializer reads these to bind Figma Variables.)
+export const annotateTree = (node, index) => {
+  const tokens = {}
+  const candidates = {}
+  const set = (key, res) => {
+    if (res.token) { tokens[key] = res.token; candidates[key] = res.candidates }
+  }
+  if (node.fills && node.fills[0]) set('fill', matchColor(index, node.fills[0].raw))
+  if (node.strokes && node.strokes[0]) set('stroke', matchColor(index, node.strokes[0].raw))
+  if (typeof node.cornerRadius === 'number') set('cornerRadius', matchDimension(index, node.cornerRadius))
+  if (Array.isArray(node.effects)) {
+    node.effects.forEach((e, i) => { if (e.color) set(`effect${i}`, matchColor(index, e.color.raw)) })
+  }
+  if (Object.keys(tokens).length) node.figtree = { tokens, candidates }
+  if (Array.isArray(node.children)) node.children.forEach((c) => annotateTree(c, index))
+  return node
+}

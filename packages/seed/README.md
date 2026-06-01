@@ -24,5 +24,25 @@ Early — not yet published (`private`). Implemented so far:
   figtree-seed resolve   # → .figtree/resolved.json
   ```
 
-Planned: the `figtree seed` command (headless capture via Playwright + vendored
-`htmlToFigma`), token annotation, artifact + index output.
+- **`captureRoot(el)`** (`src/capture.js`) — in-page DOM walker (our own
+  capture engine, no `htmlToFigma` dependency). Maps element →
+  FRAME/RECTANGLE/TEXT `LayerNode` with fills, strokes, corner radius, single
+  box-shadow, text (family/weight/size/line-height/letter-spacing/align/color),
+  flex → auto-layout + padding, and geometry relative to each parent. Designed
+  to run via Playwright's `page.evaluate`; pure helpers (color/dim/shadow
+  parsing) unit-tested. Scope (v1) supports the design-system primitive case;
+  gradients/grid/transform/pseudo-elements are deferred.
+- **`annotateTree(node, index)`** (`src/annotateTokens.js`) — walks a captured
+  tree, attaches a `figtree.tokens` / `figtree.candidates` side-channel to each
+  node whose bindable values (fill, stroke, corner radius, effect color) match
+  the resolved bindable map. Idempotent; preserves raw values for the plugin
+  materializer.
+
+Validated end-to-end against the real resolved map: a Button DOM (jsdom) →
+`captureRoot` → `annotateTree` binds `fill`/`stroke` → `primaryAction`,
+`cornerRadius` → `borderRadius`, text fill → `white`, with all candidates
+recorded.
+
+Planned: the `figtree seed` command (Playwright runner that orchestrates the
+walker against a running Storybook), artifact + index output, plugin
+materializer.
