@@ -1,9 +1,15 @@
 {
   "name": "@metatoy/figtree-react",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "React provider for Figtree design tokens",
   "license": "MIT",
-  "keywords": ["figtree", "design-tokens", "figma", "react", "tokens"],
+  "keywords": [
+    "figtree",
+    "design-tokens",
+    "figma",
+    "react",
+    "tokens"
+  ],
   "homepage": "https://github.com/nhunsaker/figtree#readme",
   "bugs": "https://github.com/nhunsaker/figtree/issues",
   "repository": {
@@ -22,7 +28,9 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "node build.mjs",

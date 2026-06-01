@@ -1,6 +1,6 @@
 {
   "name": "@metatoy/figtree-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Figma plugin that previews proposed design tokens in your app via the Figtree bridge",
   "scripts": {
