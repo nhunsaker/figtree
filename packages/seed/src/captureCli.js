@@ -7,8 +7,24 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
 import { createHash } from 'crypto'
 import { dirname, resolve, basename, extname } from 'path'
 import { build } from 'esbuild'
-import { chromium } from 'playwright'
 import { buildTokenIndex, annotateTree } from './annotateTokens.js'
+
+// Playwright is an OPTIONAL peer dep — only `capture` needs it, and it pulls a
+// ~150 MB browser. Lazy-load it so plain installs and `resolve` stay lean.
+const loadChromium = async () => {
+  try {
+    const { chromium } = await import('playwright')
+    return chromium
+  } catch {
+    console.error(
+      '✗ `figtree-seed capture` needs Playwright (it is an optional peer dep).\n' +
+        '  Install it where you run capture:\n' +
+        '    npm install playwright            # its postinstall fetches Chromium\n' +
+        '  (or: npm install playwright && npx playwright install chromium)',
+    )
+    process.exit(1)
+  }
+}
 
 const cwd = process.cwd()
 
@@ -108,6 +124,7 @@ export const runCapture = async (opts) => {
   console.log(`→ ${entries.length} stories selected`)
 
   // 2. Browser setup + walker injection
+  const chromium = await loadChromium()
   const walker = await buildWalkerBundle()
   const browser = await chromium.launch()
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } })

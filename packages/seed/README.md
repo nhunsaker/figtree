@@ -33,10 +33,13 @@ Early — not yet published (`private`). Implemented so far:
   - **`.figtree/index.json`** — a story-id → artifact map (with content hashes
     for `--changed`).
 
+  Playwright is an **optional peer dependency** — it (and its ~150 MB browser)
+  is only needed for `capture`, never for `resolve` or a plain install.
+
   ```bash
-  # one-time setup
-  npm install playwright
-  npx playwright install chromium
+  # one-time, only if you'll run capture:
+  npm install playwright        # its postinstall fetches Chromium automatically
+  #   (if browsers were skipped: npx playwright install chromium)
 
   # capture
   figtree-seed capture                          # uses seed.storybookUrl in figtree.config.json
