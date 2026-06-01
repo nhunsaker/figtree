@@ -4,8 +4,53 @@
     <meta charset="utf-8" />
     <style>
       :root { font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 12px; }
-      body { margin: 0; padding: 14px; color: #1a1a1a; }
-      h1 { font-size: 13px; margin: 0 0 10px; }
+      body { margin: 0; color: #1a1a1a; }
+
+      /* ── toolbar ────────────────────────────────────────────────────── */
+      .toolbar {
+        display: flex; align-items: center; justify-content: space-between;
+        background: #c0341d; padding: 7px 10px; gap: 6px;
+      }
+      .tb-group { display: flex; align-items: center; gap: 2px; }
+      .tb-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border: 0; border-radius: 6px;
+        background: transparent; color: #fff; cursor: pointer; padding: 0;
+        position: relative; flex-shrink: 0;
+      }
+      .tb-btn svg { display: block; pointer-events: none; }
+      .tb-btn:hover { background: rgba(255,255,255,0.18); }
+      .tb-btn:active { background: rgba(255,255,255,0.32); }
+      .tb-btn.active { background: rgba(255,255,255,0.25); }
+      .tb-btn[disabled] { opacity: 0.4; cursor: default; }
+      .tb-btn[disabled]:hover { background: transparent; }
+      /* tooltip */
+      .tb-btn::after {
+        content: attr(data-tip); pointer-events: none; opacity: 0;
+        position: absolute; top: 34px; left: 50%; transform: translateX(-50%);
+        background: #1a1a1a; color: #fff; font-size: 10px; white-space: nowrap;
+        padding: 3px 6px; border-radius: 4px; z-index: 99;
+        transition: opacity 0.15s;
+      }
+      .tb-btn:hover::after { opacity: 1; }
+      .tb-divider { width: 1px; height: 18px; background: rgba(255,255,255,0.25); margin: 0 4px; }
+      /* back button — shown only when settings open */
+      .tb-back { display: none; }
+
+      /* ── views ─────────────────────────────────────────────────────── */
+      .view { display: none; padding: 14px; }
+      .view.active { display: block; }
+
+      /* ── view header (title only, settings link removed) ─────────────── */
+      .header { margin: 0 0 12px; }
+      .header h1 { font-size: 13px; margin: 0; }
+
+      /* ── settings view ───────────────────────────────────────────────── */
+      .settings-note {
+        font-size: 11px; color: #888; margin: -4px 0 12px;
+        line-height: 1.5;
+      }
+
       label { display: block; font-weight: 600; margin: 10px 0 4px; }
       input, textarea, select {
         width: 100%; box-sizing: border-box; border: 1px solid #d9d9d9;
@@ -26,73 +71,152 @@
     </style>
   </head>
   <body>
-    <h1>Figtree — preview tokens</h1>
 
-    <label>Bridge origin <span class="hint">(where <code>figtree dev</code> is reachable)</span></label>
-    <input id="origin" placeholder="https://callout-admin-ui.dev.buzzfeed.io/figtree" />
+    <!-- ── TOOLBAR (always visible) ──────────────────────────────────── -->
+    <div class="toolbar" id="toolbar">
+      <!-- left: context labels -->
+      <div class="tb-group">
+        <button class="tb-btn" id="tb-back" data-tip="Back" style="display:none;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0m3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5z"/></svg>
+        </button>
+        <button class="tb-btn" disabled data-tip="Tokens">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.114 8.063V7.9c1.005-.102 1.497-.615 1.497-1.6V4.503c0-1.094.39-1.538 1.354-1.538h.273V2h-.376C2.25 2 1.49 2.759 1.49 4.352v1.524c0 1.094-.376 1.456-1.49 1.456v1.299c1.114 0 1.49.362 1.49 1.456v1.524c0 1.593.759 2.352 2.372 2.352h.376v-.964h-.273c-.964 0-1.354-.444-1.354-1.538V9.663c0-.984-.492-1.497-1.497-1.6M14.886 7.9v.164c-1.005.103-1.497.616-1.497 1.6v1.798c0 1.094-.39 1.538-1.354 1.538h-.273v.964h.376c1.613 0 2.372-.759 2.372-2.352v-1.524c0-1.094.376-1.456 1.49-1.456v-1.3c-1.114 0-1.49-.362-1.49-1.456V4.352C14.51 2.759 13.75 2 12.138 2h-.376v.964h.273c.964 0 1.354.444 1.354 1.538V6.3c0 .984.492 1.497 1.497 1.6M7.5 11.5V9.207l-1.621 1.621-.707-.707L6.792 8.5H4.5v-1h2.293L5.172 5.879l.707-.707L7.5 6.792V4.5h1v2.293l1.621-1.621.707.707L9.208 7.5H11.5v1H9.207l1.621 1.621-.707.707L8.5 9.208V11.5z"/></svg>
+        </button>
+        <button class="tb-btn" disabled data-tip="Storybook">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/></svg>
+        </button>
+      </div>
 
-    <label>App URL <span class="hint">(page to open with the preview)</span></label>
-    <input id="appUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/campaign" />
+      <!-- center: actions -->
+      <div class="tb-group">
+        <button class="tb-btn" id="tb-import" data-tip="Load committed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/><path fill-rule="evenodd" d="M7.646 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V5.5a.5.5 0 0 0-1 0v8.793l-2.146-2.147a.5.5 0 0 0-.708.708z"/></svg>
+        </button>
+        <button class="tb-btn" id="tb-export" data-tip="Reload from Figma">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1z"/><path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 1.707V10.5a.5.5 0 0 1-1 0V1.707L5.354 3.854a.5.5 0 1 1-.708-.708z"/></svg>
+        </button>
+        <div class="tb-divider"></div>
+        <button class="tb-btn" id="tb-preview" data-tip="Preview in app">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/></svg>
+        </button>
+        <button class="tb-btn" disabled data-tip="View in Storybook">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/></svg>
+        </button>
+        <button class="tb-btn" id="tb-syncvars" data-tip="Sync Variables from code">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0m-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708z"/></svg>
+        </button>
+      </div>
 
-    <label>GitHub file <span class="hint">(edit URL of tokens.json on the target branch)</span></label>
-    <input id="githubUrl" placeholder="https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json" />
-
-    <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
-    <textarea id="tokens">{}</textarea>
-
-    <div class="row">
-      <button class="secondary" id="reload">Reload from Figma</button>
-      <button class="secondary" id="committed">Load committed</button>
+      <!-- right: settings -->
+      <div class="tb-group">
+        <button class="tb-btn" id="tb-settings" data-tip="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="row">
-      <button class="primary" id="preview">Preview in app →</button>
-    </div>
-    <div class="row">
-      <button class="secondary" id="openpr">Open PR…</button>
-      <button class="secondary" id="syncvars">Sync Variables from code</button>
+
+    <!-- ── MAIN VIEW ─────────────────────────────────────────────────── -->
+    <div id="view-main" class="view active">
+      <div class="header">
+        <h1>Figtree — preview tokens</h1>
+      </div>
+
+      <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
+      <textarea id="tokens">{}</textarea>
+
+      <div class="row">
+        <button class="secondary" id="reload">Reload from Figma</button>
+        <button class="secondary" id="committed">Load committed</button>
+      </div>
+      <div class="row">
+        <button class="primary" id="preview">Preview in app →</button>
+      </div>
+      <div class="row">
+        <button class="secondary" id="openpr">Open PR…</button>
+        <button class="secondary" id="syncvars">Sync Variables</button>
+      </div>
+
+      <label>Insert from Storybook <span class="hint">(captured components)</span></label>
+      <div class="row">
+        <select id="storyPick" style="flex:3;"></select>
+        <button class="secondary" id="loadStories" style="flex:0 0 32px;padding:9px 6px;" title="Refresh story list">↻</button>
+        <button class="primary" id="insert" style="flex:1.2;">Insert</button>
+      </div>
+
+      <div class="status" id="status"></div>
     </div>
 
-    <label>Insert from Storybook <span class="hint">(captured components)</span></label>
-    <div class="row">
-      <select id="storyPick" style="flex:2;"></select>
-      <button class="secondary" id="loadStories" style="flex:0 0 36px;" title="Load captured stories">↻</button>
-      <button class="primary" id="insert" style="flex:1;">Insert</button>
+    <!-- ── SETTINGS VIEW ─────────────────────────────────────────────── -->
+    <div id="view-settings" class="view">
+      <div class="header">
+        <h1>Settings</h1>
+      </div>
+      <p class="settings-note">
+        These values are saved locally in your browser between sessions.
+      </p>
+
+      <label>Bridge origin <span class="hint">(where <code>figtree dev</code> is reachable)</span></label>
+      <input id="origin" placeholder="https://callout-admin-ui.dev.buzzfeed.io/figtree" />
+
+      <label>App URL <span class="hint">(page to open with the preview)</span></label>
+      <input id="appUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/campaign" />
+
+      <label>GitHub file <span class="hint">(edit URL of tokens.json on the target branch)</span></label>
+      <input id="githubUrl" placeholder="https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json" />
     </div>
 
-    <div class="status" id="status"></div>
-
-    <!-- off-screen buffer used as a clipboard fallback -->
+    <!-- off-screen clipboard buffer -->
     <textarea id="copybuf" aria-hidden="true" tabindex="-1"
       style="position:absolute;left:-9999px;top:-9999px;height:1px;"></textarea>
 
     <script>
       const $ = (id) => document.getElementById(id);
+
+      // ── view switching ────────────────────────────────────────────────
+      const showView = (id) => {
+        document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+        $(id).classList.add('active');
+        // show back button and highlight settings gear when not on main view
+        const onMain = id === 'view-main';
+        $('tb-back').style.display     = onMain ? 'none' : 'flex';
+        $('tb-settings').classList.toggle('active', !onMain);
+      };
+      $('tb-settings').onclick = () => showView('view-settings');
+      $('tb-back').onclick     = () => showView('view-main');
+
+      // ── toolbar action wiring ─────────────────────────────────────────
+      $('tb-import').onclick   = () => $('committed').click();
+      $('tb-export').onclick   = () => $('reload').click();
+      $('tb-preview').onclick  = () => $('preview').click();
+      $('tb-syncvars').onclick = () => $('syncvars').click();
+
+      // ── status (main view only) ────────────────────────────────────────
       const setStatus = (html, isErr) => {
         const el = $('status');
         el.className = 'status' + (isErr ? ' err' : '');
         el.innerHTML = html;
       };
 
-      // remember origin / app url between runs.
-      // localStorage can throw in Figma's sandboxed (null-origin) iframe, so
-      // every access is guarded — a failure here must not abort the script.
+      // ── persisted settings ────────────────────────────────────────────
       const LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl' };
-      const lsGet = (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
-      const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
-      // Editable defaults so the fields are never blank on first run.
+      const lsGet = (k) => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+      const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
       const DEFAULT_ORIGIN = 'https://callout-admin-ui.dev.buzzfeed.io/figtree';
-      const DEFAULT_APP = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
-      const DEFAULT_GH = 'https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json';
-      $('origin').value = lsGet(LS.origin) || DEFAULT_ORIGIN;
-      $('appUrl').value = lsGet(LS.app) || DEFAULT_APP;
-      $('githubUrl').value = lsGet(LS.gh) || DEFAULT_GH;
-      $('origin').addEventListener('change', (e) => lsSet(LS.origin, e.target.value));
-      $('appUrl').addEventListener('change', (e) => lsSet(LS.app, e.target.value));
-      $('githubUrl').addEventListener('change', (e) => lsSet(LS.gh, e.target.value));
+      const DEFAULT_APP    = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
+      const DEFAULT_GH     = 'https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json';
+
+      $('origin').value    = lsGet(LS.origin) || DEFAULT_ORIGIN;
+      $('appUrl').value    = lsGet(LS.app)    || DEFAULT_APP;
+      $('githubUrl').value = lsGet(LS.gh)     || DEFAULT_GH;
+
+      $('origin').addEventListener('change',    (e) => lsSet(LS.origin, e.target.value));
+      $('appUrl').addEventListener('change',    (e) => lsSet(LS.app,    e.target.value));
+      $('githubUrl').addEventListener('change', (e) => lsSet(LS.gh,     e.target.value));
 
       const trimOrigin = () => $('origin').value.trim().replace(/\/$/, '');
 
-      // ── messages from the main thread (Figma variables) ───────────────────
+      // ── messages from main thread ──────────────────────────────────────
       onmessage = (event) => {
         const msg = event.data.pluginMessage;
         if (!msg) return;
@@ -101,9 +225,9 @@
           setStatus(Object.keys(msg.tokens).length + ' token(s) loaded from Figma Variables.');
         } else if (msg.type === 'sync-result') {
           setStatus(
-            `✓ Variables synced — <b>${msg.created}</b> created, ${msg.updated} updated` +
-            (msg.skipped ? `, ${msg.skipped} skipped` : '') +
-            ` (collection "${msg.collection}").`
+            '✓ Variables synced — <b>' + msg.created + '</b> created, ' + msg.updated + ' updated' +
+            (msg.skipped ? ', ' + msg.skipped + ' skipped' : '') +
+            ' (collection "' + msg.collection + '").'
           );
         } else if (msg.type === 'insert-result') {
           setStatus('✓ Inserted into the canvas.');
@@ -113,73 +237,71 @@
       };
 
       const post = (type, extra) =>
-        parent.postMessage({ pluginMessage: { type, ...extra } }, '*');
+        parent.postMessage({ pluginMessage: Object.assign({ type: type }, extra) }, '*');
 
+      // ── Reload from Figma ──────────────────────────────────────────────
       $('reload').onclick = () => post('reload-tokens');
 
-      // Pull the resolved bindable token map from the bridge and create/update
-      // Figma Variables from it (the main thread does the actual create).
+      // ── Sync Variables from code ───────────────────────────────────────
       $('syncvars').onclick = async () => {
         const origin = trimOrigin();
-        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
         setStatus('Fetching resolved tokens…');
-        let tokens;
+        var tokens;
         try {
           const res = await fetch(origin + '/tokens/resolved');
-          if (!res.ok) {
-            throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed resolve` first' : ''));
-          }
+          if (!res.ok) throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed resolve` first' : ''));
           const data = await res.json();
           tokens = Array.isArray(data) ? data : data.tokens;
         } catch (e) {
           return setStatus('Failed to load resolved tokens: ' + e.message, true);
         }
         if (!tokens || !tokens.length) return setStatus('Resolved token map is empty.', true);
-        post('sync-variables', { tokens });
-        setStatus(`Creating Figma Variables from ${tokens.length} tokens…`);
+        post('sync-variables', { tokens: tokens });
+        setStatus('Creating Figma Variables from ' + tokens.length + ' tokens…');
       };
 
-      // Load the captured-component index and fill the story picker.
+      // ── Load story list ────────────────────────────────────────────────
       const loadStories = async () => {
         const origin = trimOrigin();
-        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
         try {
           const res = await fetch(origin + '/artifacts');
-          if (!res.ok) {
-            throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed capture` first' : ''));
-          }
+          if (!res.ok) throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed capture` first' : ''));
           const idx = await res.json();
           const stories = idx.stories || {};
           const ids = Object.keys(stories);
           const sel = $('storyPick');
           sel.innerHTML = '';
           if (!ids.length) return setStatus('No captured stories in the index.', true);
-          for (const id of ids) {
+          for (var i = 0; i < ids.length; i++) {
             const o = document.createElement('option');
-            o.value = id;
-            const s = stories[id];
-            o.textContent = (s.component || '') + ' / ' + (s.name || id);
+            o.value = ids[i];
+            const s = stories[ids[i]];
+            o.textContent = (s.component || '') + ' / ' + (s.name || ids[i]);
             sel.appendChild(o);
           }
-          setStatus(ids.length + ' captured stor' + (ids.length === 1 ? 'y' : 'ies') + ' loaded — pick one and Insert.');
+          setStatus(ids.length + ' captured stor' + (ids.length === 1 ? 'y' : 'ies') + ' loaded.');
         } catch (e) {
           setStatus('Failed to load stories: ' + e.message, true);
         }
       };
       $('loadStories').onclick = loadStories;
+      // auto-load on open
+      loadStories();
 
-      // Fetch the chosen story's artifact and hand its tree to the main thread.
+      // ── Insert from Storybook ──────────────────────────────────────────
       $('insert').onclick = async () => {
         const origin = trimOrigin();
-        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
         const id = $('storyPick').value;
-        if (!id) return setStatus('Pick a story first (↻ to load).', true);
+        if (!id) return setStatus('No stories loaded — click ↻ to refresh.', true);
         setStatus('Fetching ' + id + '…');
         try {
           const res = await fetch(origin + '/artifact?id=' + encodeURIComponent(id));
           if (!res.ok) throw new Error('HTTP ' + res.status);
           const art = await res.json();
-          const story = (art.stories || []).find((s) => s.id === id) || (art.stories || [])[0];
+          const story = (art.stories || []).find(function(s) { return s.id === id; }) || (art.stories || [])[0];
           if (!story || !story.root) throw new Error('artifact has no root for ' + id);
           post('insert-node', { node: story.root });
           setStatus('Inserting ' + id + '…');
@@ -188,10 +310,10 @@
         }
       };
 
-      // Pull the committed token set straight from the bridge (GET /tokens/latest)
+      // ── Load committed tokens ──────────────────────────────────────────
       $('committed').onclick = async () => {
         const origin = trimOrigin();
-        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
         try {
           const res = await fetch(origin + '/tokens/latest');
           if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -202,93 +324,82 @@
         }
       };
 
-      // POST the (edited) tokens, get an id, open the app at ?preview=<id>
+      // ── Preview in app ─────────────────────────────────────────────────
       $('preview').onclick = async () => {
-        let body;
+        var body;
         try {
           body = JSON.parse($('tokens').value);
-        } catch {
+        } catch (e) {
           return setStatus('Tokens must be valid JSON.', true);
         }
         const origin = trimOrigin();
         const appUrl = $('appUrl').value.trim();
-        if (!origin || !appUrl) return setStatus('Set both the bridge origin and the app URL.', true);
-
+        if (!origin || !appUrl) return setStatus('Set Bridge origin and App URL in Settings.', true);
         setStatus('Posting preview…');
         try {
           const res = await fetch(origin + '/preview', {
             method: 'POST',
-            // text/plain keeps this a CORS "simple request" (no OPTIONS
-            // preflight), so it passes through proxies that mishandle
-            // preflights. The body is still JSON — the server parses it by
-            // content, not by header.
             headers: { 'content-type': 'text/plain' },
             body: JSON.stringify(body),
           });
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          const { id } = await res.json();
+          const data = await res.json();
+          const id = data.id;
           const sep = appUrl.includes('?') ? '&' : '?';
-          const url = `${appUrl}${sep}preview=${id}`;
+          const url = appUrl + sep + 'preview=' + id;
           window.open(url, '_blank');
           post('notify', { message: 'Preview ready: ' + id });
-          setStatus(`Preview <b>${id}</b> created. <a href="${url}" target="_blank">Open app ↗</a>`);
+          setStatus('Preview <b>' + id + '</b> created. <a href="' + url + '" target="_blank">Open app ↗</a>');
         } catch (e) {
           setStatus('Preview failed: ' + e.message + ' (is the bridge running and allowed in manifest?)', true);
         }
       };
 
-      // ── Open a PR (no token, designer's own GitHub account) ───────────────
-      // Merge the edits onto the committed token set, copy the full
-      // tokens.json to the clipboard, and open the GitHub web editor so the
-      // designer can paste → Commit changes → Propose changes (opens the PR).
+      // ── Open PR ────────────────────────────────────────────────────────
       $('openpr').onclick = async () => {
-        let edits;
+        var edits;
         try {
           edits = JSON.parse($('tokens').value);
-        } catch {
+        } catch (e) {
           return setStatus('Tokens must be valid JSON.', true);
         }
         const origin = trimOrigin();
         const editUrl = $('githubUrl').value.trim();
-        if (!origin) return setStatus('Set the Bridge origin first.', true);
-        if (!editUrl) return setStatus('Set the GitHub file URL first.', true);
+        if (!origin) return setStatus('Set Bridge origin in Settings.', true);
+        if (!editUrl) return setStatus('Set GitHub file URL in Settings.', true);
 
-        // Merge onto the committed set so the PR is a clean diff and never
-        // drops the tokens the designer didn't touch.
         setStatus('Merging with committed tokens…');
-        let committed;
+        var committed;
         try {
           const res = await fetch(origin + '/tokens/latest');
           if (!res.ok) throw new Error('HTTP ' + res.status);
           committed = await res.json();
         } catch (e) {
-          return setStatus('Could not load committed tokens to merge (' + e.message +
-            '); aborting so we don’t replace the file with a partial set.', true);
+          return setStatus('Could not load committed tokens: ' + e.message, true);
         }
 
-        const merged = { ...committed, ...edits };
+        const merged = Object.assign({}, committed, edits);
         const json = JSON.stringify(merged, null, 2) + '\n';
-        const changed = Object.keys(edits).filter((k) => committed[k] !== edits[k]);
+        const changed = Object.keys(edits).filter(function(k) { return committed[k] !== edits[k]; });
 
-        // Copy the full file (clipboard API → legacy execCommand → visible box).
-        let copied = false;
-        try { await navigator.clipboard.writeText(json); copied = true; } catch {}
+        var copied = false;
+        try { await navigator.clipboard.writeText(json); copied = true; } catch (e) {}
         if (!copied) {
           try {
             const buf = $('copybuf');
             buf.value = json; buf.focus(); buf.select();
             copied = document.execCommand('copy');
-          } catch {}
+          } catch (e) {}
         }
-        if (!copied) $('tokens').value = json; // last resort: surface for manual copy
+        if (!copied) $('tokens').value = json;
 
         window.open(editUrl, '_blank');
         setStatus(
           (copied
-            ? '✓ Copied the full <code>tokens.json</code> to your clipboard. '
-            : 'Could not auto-copy — the merged file is now in the Tokens box; select all and copy it. ') +
-          'In the GitHub tab: <b>select all (⌘A) → paste → Commit changes… → Propose changes</b> to open the PR.' +
-          '<br/>Changed: ' + (changed.length ? '<b>' + changed.join(', ') + '</b>' : 'none')
+            ? '✓ Copied <code>tokens.json</code> to clipboard. '
+            : 'Could not auto-copy — merged file is in the Tokens box. ') +
+          'In GitHub: <b>⌘A → paste → Commit changes… → Propose changes</b>.' +
+          (changed.length ? '<br/>Changed: <b>' + changed.join(', ') + '</b>' : '')
         );
       };
     </script>
