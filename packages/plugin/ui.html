@@ -16,15 +16,15 @@
       .tb-btn {
         display: flex; align-items: center; justify-content: center;
         width: 30px; height: 30px; border: 0; border-radius: 6px;
-        background: transparent; color: #aaaaaa; cursor: pointer; padding: 0;
+        background: transparent; color: #ffffff; cursor: pointer; padding: 0;
         position: relative; flex-shrink: 0;
       }
       .tb-btn svg { display: block; pointer-events: none; }
-      .tb-btn:hover { background: #3d3d3d; color: #ffffff; }
-      .tb-btn:active { background: #4d4d4d; color: #ffffff; }
-      .tb-btn.active { background: #3d3d3d; color: #ffffff; }
+      .tb-btn:hover { background: #3d3d3d; color: #7dd3fc; }
+      .tb-btn:active { background: #4d4d4d; color: #38bdf8; }
+      .tb-btn.active { background: #3d3d3d; color: #7dd3fc; }
       .tb-btn[disabled] { opacity: 0.3; cursor: default; }
-      .tb-btn[disabled]:hover { background: transparent; color: #aaaaaa; }
+      .tb-btn[disabled]:hover { background: transparent; color: #ffffff; }
       /* tooltip */
       .tb-btn::after {
         content: attr(data-tip); pointer-events: none; opacity: 0;
@@ -100,10 +100,10 @@
         <button class="tb-btn" id="tb-preview" data-tip="Preview in app">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/></svg>
         </button>
-        <button class="tb-btn" disabled data-tip="View in Storybook">
+        <button class="tb-btn" disabled data-tip="Preview in Storybook">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/></svg>
         </button>
-        <button class="tb-btn" id="tb-syncvars" data-tip="Sync Variables from code">
+        <button class="tb-btn" id="tb-syncvars" data-tip="Reload from Storybook">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 0a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 4.095 0 5.555 0 7.318 0 9.366 1.708 11 3.781 11H7.5V5.5a.5.5 0 0 1 1 0V11h4.188C14.502 11 16 9.57 16 7.773c0-1.636-1.242-2.969-2.834-3.194C12.923 1.999 10.69 0 8 0m-.354 15.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 14.293V11h-1v3.293l-2.146-2.147a.5.5 0 0 0-.708.708z"/></svg>
         </button>
       </div>
