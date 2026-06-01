@@ -134,27 +134,50 @@ async function figtreeVarMap() {
   return map;
 }
 
-const WEIGHT_STYLE = {
-  100: 'Thin', 200: 'Extra Light', 300: 'Light', 400: 'Regular',
-  500: 'Medium', 600: 'Semi Bold', 700: 'Bold', 800: 'Extra Bold', 900: 'Black',
+// Infer a numeric weight + italic from a Figma style name ("Semi Bold Italic"…).
+const STYLE_WEIGHT = [
+  [/thin|hairline/i, 100], [/extra\s?light|ultra\s?light/i, 200], [/light/i, 300],
+  [/medium/i, 500], [/semi\s?bold|demi\s?bold/i, 600],
+  [/extra\s?bold|ultra\s?bold/i, 800], [/black|heavy/i, 900], [/bold/i, 700],
+  [/regular|normal|book/i, 400],
+];
+const styleWeight = (style) => {
+  for (const pair of STYLE_WEIGHT) if (pair[0].test(style)) return pair[1];
+  return 400;
 };
-const styleForWeight = (weight, italic) => {
-  const base = WEIGHT_STYLE[Math.round((weight || 400) / 100) * 100] || 'Regular';
-  if (!italic) return base;
-  return base === 'Regular' ? 'Italic' : base + ' Italic';
-};
+const styleIsItalic = (style) => /italic|oblique/i.test(style);
 
-// Load the best available font; degrade gracefully so setCharacters never throws.
-async function loadFontSafe(family, style) {
-  const tries = [
-    { family, style },
-    { family, style: 'Regular' },
-    { family: 'Inter', style: 'Regular' },
-    { family: 'Roboto', style: 'Regular' },
-  ];
-  for (const f of tries) {
-    try { await figma.loadFontAsync(f); return f; } catch (e) {}
+// family → [styles], loaded once (the font list can be large).
+let _fontsByFamily = null;
+async function fontsByFamily() {
+  if (_fontsByFamily) return _fontsByFamily;
+  const map = new Map();
+  const list = await figma.listAvailableFontsAsync();
+  for (const f of list) {
+    const fam = f.fontName.family;
+    if (!map.has(fam)) map.set(fam, []);
+    map.get(fam).push(f.fontName.style);
   }
+  _fontsByFamily = map;
+  return map;
+}
+
+// Pick the available font whose style is closest to the target weight/italic,
+// trying the captured family first, then sensible fallbacks. Preserves weight
+// even when the exact family/style name isn't installed.
+async function pickFont(family, weight, italic) {
+  const byFam = await fontsByFamily();
+  const want = weight || 400;
+  for (const fam of [family, 'Inter', 'Roboto', 'Helvetica Neue', 'Arial']) {
+    const styles = byFam.get(fam);
+    if (!styles || !styles.length) continue;
+    let cands = styles.filter((s) => styleIsItalic(s) === !!italic);
+    if (!cands.length) cands = styles.slice();
+    cands.sort((a, b) => Math.abs(styleWeight(a) - want) - Math.abs(styleWeight(b) - want));
+    try { await figma.loadFontAsync({ family: fam, style: cands[0] }); return { family: fam, style: cands[0] }; }
+    catch (e) {}
+  }
+  try { await figma.loadFontAsync({ family: 'Roboto', style: 'Regular' }); } catch (e) {}
   return { family: 'Roboto', style: 'Regular' };
 }
 
@@ -175,7 +198,7 @@ async function materialize(node, varMap) {
 
   if (node.type === 'TEXT') {
     const t = figma.createText();
-    t.fontName = await loadFontSafe(node.fontFamily || 'Inter', styleForWeight(node.fontWeight, node.italic));
+    t.fontName = await pickFont(node.fontFamily || 'Inter', node.fontWeight, node.italic);
     t.characters = node.characters || '';
     if (node.fontSize) t.fontSize = node.fontSize;
     if (node.letterSpacing != null) t.letterSpacing = { unit: 'PIXELS', value: node.letterSpacing };
