@@ -153,7 +153,7 @@ async function loadFontSafe(family, style) {
     { family: 'Roboto', style: 'Regular' },
   ];
   for (const f of tries) {
-    try { await figma.loadFontAsync(f); return f; } catch {}
+    try { await figma.loadFontAsync(f); return f; } catch (e) {}
   }
   return { family: 'Roboto', style: 'Regular' };
 }
@@ -167,7 +167,7 @@ const cleanPaint = (p) => ({
 const bindPaint = (paint, varMap, tokenName) => {
   const v = tokenName && varMap.get(tokenName);
   if (!v) return paint;
-  try { return figma.variables.setBoundVariableForPaint(paint, 'color', v); } catch { return paint; }
+  try { return figma.variables.setBoundVariableForPaint(paint, 'color', v); } catch (e) { return paint; }
 };
 
 async function materialize(node, varMap) {
@@ -201,7 +201,7 @@ async function materialize(node, varMap) {
     f.cornerRadius = node.cornerRadius;
     const v = tokens.cornerRadius && varMap.get(tokens.cornerRadius);
     if (v) for (const field of ['topLeftRadius', 'topRightRadius', 'bottomRightRadius', 'bottomLeftRadius']) {
-      try { f.setBoundVariable(field, v); } catch {}
+      try { f.setBoundVariable(field, v); } catch (e) {}
     }
   } else if (Array.isArray(node.cornerRadius)) {
     const [tl, tr, br, bl] = node.cornerRadius;
@@ -257,7 +257,10 @@ figma.ui.onmessage = (msg) => {
   if (msg.type === 'reload-tokens') sendTokens();
   else if (msg.type === 'sync-variables') {
     syncVariables(msg.tokens)
-      .then((r) => figma.ui.postMessage({ type: 'sync-result', ...r }))
+      .then((r) => figma.ui.postMessage({
+        type: 'sync-result',
+        created: r.created, updated: r.updated, skipped: r.skipped, collection: r.collection,
+      }))
       .catch((err) => figma.ui.postMessage({ type: 'error', message: String(err) }));
   }
   else if (msg.type === 'insert-node') {
