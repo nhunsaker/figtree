@@ -5,6 +5,9 @@
   "description": "Storybook → Figma capture for Figtree: headless capture + the resolved bindable token map. Heavy deps (esbuild, later Playwright) live here so the bridge stays lean.",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "figtree-seed": "src/cli.js"
+  },
   "dependencies": {
     "esbuild": "^0.21.0"
   }

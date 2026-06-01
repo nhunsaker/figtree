@@ -7,8 +7,11 @@ const PREVIEW_TTL_MS = 1000 * 60 * 60 * 24 // 24 hours
 /**
  * @param {string} namespace
  * @param {() => import('./types').TokenSet} getLatestTokens
+ * @param {() => (Array<{name:string,value:string,kind:string}> | null)} [getResolvedTokens]
+ *   Returns the resolved bindable token map (from .figtree/resolved.json,
+ *   produced by `figtree-seed`), or null if it hasn't been generated.
  */
-export const createServer = (namespace, getLatestTokens) => {
+export const createServer = (namespace, getLatestTokens, getResolvedTokens) => {
   /** @type {Map<string, import('./types').PreviewEntry>} */
   const previews = new Map()
 
@@ -73,6 +76,21 @@ export const createServer = (namespace, getLatestTokens) => {
   // Plugin fetches this on open to pre-populate the editor.
   app.get('/tokens/latest', (c) => {
     return c.json(getLatestTokens())
+  })
+
+  // ─── GET /tokens/resolved ──────────────────────────────────────────────────
+  // The resolved *bindable* token map (semantic + primitive) produced by
+  // `figtree-seed`. The plugin uses it to create Variables and to bind
+  // captured values. 404 if seed hasn't generated it yet.
+  app.get('/tokens/resolved', (c) => {
+    const resolved = getResolvedTokens ? getResolvedTokens() : null
+    if (!resolved) {
+      return c.json(
+        { error: 'No resolved token map. Run `figtree-seed resolve`.' },
+        404,
+      )
+    }
+    return c.json(resolved)
   })
 
   // ─── GET /health ──────────────────────────────────────────────────────────

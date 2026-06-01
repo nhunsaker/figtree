@@ -55,7 +55,20 @@ program
       }
     })
 
-    const app = createServer(config.namespace, read)
+    // Resolved bindable token map, produced by `figtree-seed resolve`.
+    // Read fresh each request so re-seeding is picked up without a restart.
+    const resolvedPath = resolve(process.cwd(), '.figtree/resolved.json')
+    const readResolved = () => {
+      if (!existsSync(resolvedPath)) return null
+      try {
+        const data = JSON.parse(readFileSync(resolvedPath, 'utf-8'))
+        return Array.isArray(data) ? data : data.tokens
+      } catch {
+        return null
+      }
+    }
+
+    const app = createServer(config.namespace, read, readResolved)
 
     serve({ fetch: app.fetch, port }, () => {
       console.log(

@@ -5,3 +5,6 @@ dist/
 
 # This is a pnpm workspace; per-package npm lockfiles are not used.
 package-lock.json
+
+# Local planning / spec docs — kept out of the repo
+/spec/

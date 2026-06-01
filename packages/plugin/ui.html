@@ -49,6 +49,7 @@
     </div>
     <div class="row">
       <button class="secondary" id="openpr">Open PR…</button>
+      <button class="secondary" id="syncvars">Sync Variables from code</button>
     </div>
 
     <div class="status" id="status"></div>
@@ -91,8 +92,14 @@
         if (msg.type === 'tokens') {
           $('tokens').value = JSON.stringify(msg.tokens, null, 2);
           setStatus(Object.keys(msg.tokens).length + ' token(s) loaded from Figma Variables.');
+        } else if (msg.type === 'sync-result') {
+          setStatus(
+            `✓ Variables synced — <b>${msg.created}</b> created, ${msg.updated} updated` +
+            (msg.skipped ? `, ${msg.skipped} skipped` : '') +
+            ` (collection "${msg.collection}").`
+          );
         } else if (msg.type === 'error') {
-          setStatus('Could not read Variables: ' + msg.message, true);
+          setStatus('Plugin error: ' + msg.message, true);
         }
       };
 
@@ -100,6 +107,28 @@
         parent.postMessage({ pluginMessage: { type, ...extra } }, '*');
 
       $('reload').onclick = () => post('reload-tokens');
+
+      // Pull the resolved bindable token map from the bridge and create/update
+      // Figma Variables from it (the main thread does the actual create).
+      $('syncvars').onclick = async () => {
+        const origin = trimOrigin();
+        if (!origin) return setStatus('Set the Bridge origin first.', true);
+        setStatus('Fetching resolved tokens…');
+        let tokens;
+        try {
+          const res = await fetch(origin + '/tokens/resolved');
+          if (!res.ok) {
+            throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed resolve` first' : ''));
+          }
+          const data = await res.json();
+          tokens = Array.isArray(data) ? data : data.tokens;
+        } catch (e) {
+          return setStatus('Failed to load resolved tokens: ' + e.message, true);
+        }
+        if (!tokens || !tokens.length) return setStatus('Resolved token map is empty.', true);
+        post('sync-variables', { tokens });
+        setStatus(`Creating Figma Variables from ${tokens.length} tokens…`);
+      };
 
       // Pull the committed token set straight from the bridge (GET /tokens/latest)
       $('committed').onclick = async () => {
