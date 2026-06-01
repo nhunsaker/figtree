@@ -55,20 +55,36 @@ program
       }
     })
 
-    // Resolved bindable token map, produced by `figtree-seed resolve`.
-    // Read fresh each request so re-seeding is picked up without a restart.
-    const resolvedPath = resolve(process.cwd(), '.figtree/resolved.json')
+    // Resolved bindable token map + captured-component artifacts produced by
+    // figtree-seed. Read fresh on each request so re-seeding is picked up
+    // without restarting the bridge.
+    const figtreeDir = resolve(process.cwd(), '.figtree')
+    const resolvedPath = resolve(figtreeDir, 'resolved.json')
+    const indexPath = resolve(figtreeDir, 'index.json')
+
+    const readJson = (p) => {
+      if (!existsSync(p)) return null
+      try { return JSON.parse(readFileSync(p, 'utf-8')) } catch { return null }
+    }
     const readResolved = () => {
-      if (!existsSync(resolvedPath)) return null
-      try {
-        const data = JSON.parse(readFileSync(resolvedPath, 'utf-8'))
-        return Array.isArray(data) ? data : data.tokens
-      } catch {
-        return null
-      }
+      const data = readJson(resolvedPath)
+      return data && (Array.isArray(data) ? data : data.tokens)
+    }
+    const readIndex = () => readJson(indexPath)
+
+    // Look up an artifact by story id via the index. NEVER trust a raw path
+    // from the caller (path-traversal safe).
+    const readArtifact = (storyId) => {
+      const idx = readIndex()
+      const entry = idx && idx.stories && idx.stories[storyId]
+      if (!entry) return null
+      const artPath = resolve(process.cwd(), entry.artifact)
+      // Sanity: artifact path must be inside cwd.
+      if (!artPath.startsWith(process.cwd() + '/')) return null
+      return readJson(artPath)
     }
 
-    const app = createServer(config.namespace, read, readResolved)
+    const app = createServer(config.namespace, read, readResolved, readIndex, readArtifact)
 
     serve({ fetch: app.fetch, port }, () => {
       console.log(

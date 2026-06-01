@@ -46,7 +46,16 @@ if (cmd === 'resolve') {
     `✓ Resolved ${tokens.length} bindable tokens (${s} semantic, ${tokens.length - s} primitive)`,
   )
   console.log('  → .figtree/resolved.json')
+} else if (cmd === 'capture') {
+  const { runCapture } = await import('./captureCli.js')
+  const opts = {}
+  for (const a of process.argv.slice(3)) {
+    if (a === '--changed') opts.changed = true
+    else if (a.startsWith('--only=')) opts.only = a.slice('--only='.length)
+    else if (a.startsWith('--storybook-url=')) opts.storybookUrl = a.slice('--storybook-url='.length)
+  }
+  await runCapture(opts)
 } else {
-  console.error(`Unknown command: ${cmd}\nUsage: figtree-seed resolve`)
+  console.error(`Unknown command: ${cmd}\nUsage: figtree-seed <resolve|capture> [options]`)
   process.exit(1)
 }

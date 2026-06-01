@@ -200,3 +200,10 @@ export const captureNode = (el, parentRect) => {
 
 /** Entry point: capture a root element with itself at the origin (0,0). */
 export const captureRoot = (el) => captureNode(el, el.getBoundingClientRect())
+
+// Install the walker on `window` so it can be called from a Playwright
+// page.evaluate(() => window.__figtreeCapture(...)) after this module is
+// bundled and injected via addInitScript. No-op in Node tests.
+if (typeof window !== 'undefined') {
+  window.__figtreeCapture = (el) => captureRoot(el || document.querySelector('#storybook-root'))
+}

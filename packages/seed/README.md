@@ -24,6 +24,43 @@ Early — not yet published (`private`). Implemented so far:
   figtree-seed resolve   # → .figtree/resolved.json
   ```
 
+- **`figtree-seed capture`** (`src/captureCli.js`) — Playwright runner that
+  visits every story in your running Storybook, injects the walker (below),
+  captures the rendered root, annotates tokens against `.figtree/resolved.json`,
+  and writes:
+  - one **`<Component>.figtree.json`** *next to each story file* (containing
+    all of that component's stories), and
+  - **`.figtree/index.json`** — a story-id → artifact map (with content hashes
+    for `--changed`).
+
+  ```bash
+  # one-time setup
+  npm install playwright
+  npx playwright install chromium
+
+  # capture
+  figtree-seed capture                          # uses seed.storybookUrl in figtree.config.json
+  figtree-seed capture --only=Button.stories    # filter by importPath/title/id
+  figtree-seed capture --changed                # only re-capture stories whose hash changed
+  figtree-seed capture --storybook-url=https://callout-admin-ui.dev.buzzfeed.io/storybook
+  ```
+
+  **Dev Storybook URL** (callout_admin_ui):
+  `https://callout-admin-ui.dev.buzzfeed.io/storybook` — exposes `/index.json`
+  and `/iframe.html` and currently has the StyledComponents/Button stories
+  (default / outline / outline-dark / outline-red / red / …). Set it in
+  `figtree.config.json` once:
+
+  ```jsonc
+  {
+    "seed": { "storybookUrl": "https://callout-admin-ui.dev.buzzfeed.io/storybook" }
+  }
+  ```
+
+  The captured artifacts are then served by the bridge at
+  `GET /artifacts` (the index) and `GET /artifact?id=<storyId>` (one
+  artifact, looked up by id — never a raw filesystem path).
+
 - **`captureRoot(el)`** (`src/capture.js`) — in-page DOM walker (our own
   capture engine, no `htmlToFigma` dependency). Maps element →
   FRAME/RECTANGLE/TEXT `LayerNode` with fills, strokes, corner radius, single
@@ -43,6 +80,6 @@ Validated end-to-end against the real resolved map: a Button DOM (jsdom) →
 `cornerRadius` → `borderRadius`, text fill → `white`, with all candidates
 recorded.
 
-Planned: the `figtree seed` command (Playwright runner that orchestrates the
-walker against a running Storybook), artifact + index output, plugin
-materializer.
+Planned: the **plugin materializer** (turns each `LayerNode` into a Figma
+component bound to Variables via `setBoundVariable`); pseudo-elements and
+forced interaction states; component-set assembly from per-story captures.

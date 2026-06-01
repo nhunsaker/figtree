@@ -10,8 +10,19 @@ const PREVIEW_TTL_MS = 1000 * 60 * 60 * 24 // 24 hours
  * @param {() => (Array<{name:string,value:string,kind:string}> | null)} [getResolvedTokens]
  *   Returns the resolved bindable token map (from .figtree/resolved.json,
  *   produced by `figtree-seed`), or null if it hasn't been generated.
+ * @param {() => (object | null)} [getArtifactIndex]
+ *   Returns the captured-component index (.figtree/index.json), or null.
+ * @param {(storyId: string) => (object | null)} [getArtifact]
+ *   Returns the artifact JSON for a story id (looked up via the index — never
+ *   accepts a raw path), or null if not found.
  */
-export const createServer = (namespace, getLatestTokens, getResolvedTokens) => {
+export const createServer = (
+  namespace,
+  getLatestTokens,
+  getResolvedTokens,
+  getArtifactIndex,
+  getArtifact,
+) => {
   /** @type {Map<string, import('./types').PreviewEntry>} */
   const previews = new Map()
 
@@ -91,6 +102,30 @@ export const createServer = (namespace, getLatestTokens, getResolvedTokens) => {
       )
     }
     return c.json(resolved)
+  })
+
+  // ─── GET /artifacts ───────────────────────────────────────────────────────
+  // The captured-component index — list of components/stories with hashes,
+  // produced by `figtree-seed capture`. 404 until seed has run.
+  app.get('/artifacts', (c) => {
+    const idx = getArtifactIndex ? getArtifactIndex() : null
+    if (!idx) {
+      return c.json(
+        { error: 'No artifact index. Run `figtree-seed capture`.' },
+        404,
+      )
+    }
+    return c.json(idx)
+  })
+
+  // ─── GET /artifact?id=<storyId> ───────────────────────────────────────────
+  // Lookup by id in the index — never accepts an arbitrary filesystem path.
+  app.get('/artifact', (c) => {
+    const storyId = c.req.query('id')
+    if (!storyId) return c.json({ error: 'Missing ?id=' }, 400)
+    const art = getArtifact ? getArtifact(storyId) : null
+    if (!art) return c.json({ error: 'Artifact not found for id: ' + storyId }, 404)
+    return c.json(art)
   })
 
   // ─── GET /health ──────────────────────────────────────────────────────────
