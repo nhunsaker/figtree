@@ -11,6 +11,12 @@
   "networkAccess": {
     "allowedDomains": ["*"],
     "reasoning": "Figtree bridge can be hosted at any origin — local dev (localhost) or a self-hosted/cloud deployment. Users configure the URL in plugin Settings.",
-    "devAllowedDomains": ["http://localhost:5173", "http://localhost:7777", "http://localhost:6006"]
+    "devAllowedDomains": [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:6006",
+      "http://localhost:7777",
+      "http://localhost:8080"
+    ]
   }
 }
