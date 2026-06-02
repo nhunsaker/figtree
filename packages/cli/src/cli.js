@@ -30,7 +30,7 @@ const loadConfig = () => {
 program
   .name('figtree')
   .description('Figtree design token bridge')
-  .version('1.0.0')
+  .version('1.2.0')
 
 // ─── dev (default) ────────────────────────────────────────────────────────────
 
