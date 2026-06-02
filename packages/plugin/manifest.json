@@ -9,7 +9,7 @@
   "documentAccess": "dynamic-page",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["https://callout-admin-ui.dev.buzzfeed.io"],
-    "devAllowedDomains": ["http://localhost:10106", "http://localhost:7777"]
+    "allowedDomains": ["*"],
+    "devAllowedDomains": ["http://localhost:5173", "http://localhost:7777", "http://localhost:6006"]
   }
 }

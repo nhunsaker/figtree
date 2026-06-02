@@ -150,16 +150,16 @@
       <p class="settings-note">Saved locally between sessions.</p>
 
       <label>Bridge origin <span class="hint">(where <code>figtree dev</code> is reachable)</span></label>
-      <input id="origin" placeholder="https://callout-admin-ui.dev.buzzfeed.io/figtree" />
+      <input id="origin" placeholder="http://localhost:7777" />
 
       <label>App URL <span class="hint">(page to open with the preview)</span></label>
-      <input id="appUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/campaign" />
+      <input id="appUrl" placeholder="http://localhost:5173" />
 
       <label>Storybook URL <span class="hint">(base URL — preview param appended on click)</span></label>
-      <input id="storybookUrl" placeholder="https://callout-admin-ui.dev.buzzfeed.io/storybook/" />
+      <input id="storybookUrl" placeholder="http://localhost:6006" />
 
-      <label>GitHub file <span class="hint">(edit URL of tokens.json on the target branch)</span></label>
-      <input id="githubUrl" placeholder="https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json" />
+      <label>GitHub file <span class="hint">(edit URL of tokens file on the target branch)</span></label>
+      <input id="githubUrl" placeholder="https://github.com/nhunsaker/figree-demo/edit/main/tokens/semantic.json" />
     </div>
 
     <!-- off-screen clipboard buffer -->
@@ -209,10 +209,10 @@
       function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
       function lsSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
 
-      var DEFAULT_ORIGIN = 'https://callout-admin-ui.dev.buzzfeed.io/figtree';
-      var DEFAULT_APP    = 'https://callout-admin-ui.dev.buzzfeed.io/campaign';
-      var DEFAULT_GH     = 'https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json';
-      var DEFAULT_SB     = 'https://callout-admin-ui.dev.buzzfeed.io/storybook/';
+      var DEFAULT_ORIGIN = 'http://localhost:7777';
+      var DEFAULT_APP    = 'http://localhost:5173';
+      var DEFAULT_GH     = 'https://github.com/nhunsaker/figree-demo/edit/main/tokens/semantic.json';
+      var DEFAULT_SB     = 'http://localhost:6006';
 
       $('origin').value       = lsGet(LS.origin) || DEFAULT_ORIGIN;
       $('appUrl').value       = lsGet(LS.app)    || DEFAULT_APP;

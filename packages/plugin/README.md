@@ -27,12 +27,11 @@ network calls and the iframe can't touch the document.
 3. Run **Plugins → Development → Figtree**.
 
 In the panel:
-- **Bridge origin** — where the bridge is reachable, e.g.
-  `https://callout-admin-ui.dev.buzzfeed.io/figtree` (or `http://localhost:7777`).
-- **App URL** — the page to open, e.g.
-  `https://callout-admin-ui.dev.buzzfeed.io/campaign`.
+- **Bridge origin** — where `figtree dev` is reachable, e.g. `http://localhost:7777`.
+- **App URL** — the page to open with the preview, e.g. `http://localhost:5173`.
+- **Storybook URL** — the Storybook base URL, e.g. `http://localhost:6006`.
 - **GitHub file** — the *edit* URL of the token file on the target branch,
-  e.g. `https://github.com/buzzfeed/mono/edit/master/callout_admin_ui/tokens/tokens.json`.
+  e.g. `https://github.com/nhunsaker/figree-demo/edit/main/tokens/semantic.json`.
 - The **Tokens** box is prefilled from your Figma Variables; edit freely.
 - **Preview in app →** POSTs the tokens and opens the app with the new id.
 - **Load committed** pulls the live committed set from `GET /tokens/latest`.
