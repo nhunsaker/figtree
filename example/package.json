@@ -5,7 +5,9 @@
   "description": "Reference app wiring showing how to consume the Figtree packages",
   "type": "module",
   "scripts": {
-    "figtree": "figtree dev"
+    "figtree": "figtree dev",
+    "tokens": "style-dictionary build --config ./sd.config.js",
+    "build": "npm run tokens"
   },
   "dependencies": {
     "@metatoy/figtree-react": "^1.0.0",

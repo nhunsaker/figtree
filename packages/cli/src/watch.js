@@ -50,3 +50,37 @@ export const watchTokenFile = (tokenPath, onChange) => {
     stop: () => watcher.close(),
   }
 }
+
+/**
+ * Watch multiple token *source* files (the DTCG sets) and fire `onChange` when
+ * any changes — used to re-run Style Dictionary. Unlike watchTokenFile this
+ * doesn't read/serve a file and doesn't hard-exit on a missing path (it watches
+ * whichever paths exist).
+ *
+ * @param {string[]} paths
+ * @param {(changedPath: string) => void} onChange
+ * @returns {{ stop: () => void }}
+ */
+export const watchSources = (paths, onChange) => {
+  const abs = (paths || [])
+    .map((p) => resolve(process.cwd(), p))
+    .filter((p) => existsSync(p))
+
+  if (!abs.length) {
+    console.warn(pc.yellow('  ⚠ No token sources found to watch.'))
+    return { stop: () => {} }
+  }
+
+  const watcher = chokidar.watch(abs, {
+    ignoreInitial: true,
+    awaitWriteFinish: { stabilityThreshold: 100 },
+  })
+
+  watcher.on('change', (p) => {
+    console.log(pc.cyan('  → Token source changed') + pc.dim(` (${p})`))
+    onChange(p)
+  })
+  watcher.on('error', (err) => console.error(pc.red('  ✗ Watcher error:'), err))
+
+  return { stop: () => watcher.close() }
+}

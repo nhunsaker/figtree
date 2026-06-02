@@ -1,0 +1,54 @@
+{
+  "$version": "1.0.0",
+  "button": {
+    "radius": { "$value": "{radius.control}", "$type": "dimension" },
+
+    "primary": {
+      "bg":     { "default":  { "$value": "{color.action.primary}",       "$type": "color" },
+                  "hover":    { "$value": "{color.action.primary-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.bg.disabled}",          "$type": "color" } },
+      "text":   { "default":  { "$value": "{color.text.on-action}", "$type": "color" },
+                  "hover":    { "$value": "{color.text.on-action}", "$type": "color" },
+                  "disabled": { "$value": "{color.text.disabled}",  "$type": "color" } },
+      "border": { "default":  { "$value": "{color.action.primary}",       "$type": "color" },
+                  "hover":    { "$value": "{color.action.primary-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.border.disabled}",      "$type": "color" } }
+    },
+
+    "danger": {
+      "bg":     { "default":  { "$value": "{color.feedback.danger}",       "$type": "color" },
+                  "hover":    { "$value": "{color.feedback.danger-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.bg.disabled}",           "$type": "color" } },
+      "text":   { "default":  { "$value": "{color.text.on-action}", "$type": "color" },
+                  "hover":    { "$value": "{color.text.on-action}", "$type": "color" },
+                  "disabled": { "$value": "{color.text.disabled}",  "$type": "color" } },
+      "border": { "default":  { "$value": "{color.feedback.danger}",       "$type": "color" },
+                  "hover":    { "$value": "{color.feedback.danger-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.border.disabled}",       "$type": "color" } }
+    },
+
+    "success": {
+      "bg":     { "default":  { "$value": "{color.feedback.success}",       "$type": "color" },
+                  "hover":    { "$value": "{color.feedback.success-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.bg.disabled}",            "$type": "color" } },
+      "text":   { "default":  { "$value": "{color.text.on-action}", "$type": "color" },
+                  "hover":    { "$value": "{color.text.on-action}", "$type": "color" },
+                  "disabled": { "$value": "{color.text.disabled}",  "$type": "color" } },
+      "border": { "default":  { "$value": "{color.feedback.success}",       "$type": "color" },
+                  "hover":    { "$value": "{color.feedback.success-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.border.disabled}",        "$type": "color" } }
+    },
+
+    "outline": {
+      "bg":     { "default":  { "$value": "{color.transparent}", "$type": "color" },
+                  "hover":    { "$value": "{color.transparent}", "$type": "color" },
+                  "disabled": { "$value": "{color.transparent}", "$type": "color" } },
+      "text":   { "default":  { "$value": "{color.action.primary}",       "$type": "color" },
+                  "hover":    { "$value": "{color.action.primary-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.text.disabled}",        "$type": "color" } },
+      "border": { "default":  { "$value": "{color.action.primary}",       "$type": "color" },
+                  "hover":    { "$value": "{color.action.primary-hover}", "$type": "color" },
+                  "disabled": { "$value": "{color.border.disabled}",      "$type": "color" } }
+    }
+  }
+}

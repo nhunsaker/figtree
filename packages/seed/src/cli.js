@@ -1,11 +1,16 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
-import { resolveBindableTokens } from './resolveTokens.js'
+import { execSync } from 'child_process'
 
 // figtree-seed — Storybook → Figma capture tooling.
-// v1 implements `resolve`: write the resolved bindable token map that the
-// bridge serves and the plugin consumes. (Headless capture lands next.)
+//
+// `resolve` is now a thin wrapper around Style Dictionary: the DTCG token sets
+// (primitive/semantic/component) are the source of truth, and SD's
+// `figtree/resolved-map` format produces `.figtree/resolved.json` directly —
+// the schema { id, cssVar, value, tier, type }. This retires the old
+// esbuild-bundle-and-eval resolver (and its theme.js scraping). The app build
+// owns SD; the bridge and `capture` are pure consumers of its output.
 
 const cwd = process.cwd()
 
@@ -22,30 +27,23 @@ const cmd = process.argv[2] || 'resolve'
 
 if (cmd === 'resolve') {
   const config = loadConfig()
-  const themePath = resolve(cwd, config.themePath || 'src/styles/theme.js')
-  if (!existsSync(themePath)) {
-    console.error('✗ themePath not found:', themePath, '\n  Set "themePath" in figtree.config.json.')
+  const sdConfig = config.styleDictionaryConfig || 'sd.config.js'
+  const abs = resolve(cwd, sdConfig)
+  if (!existsSync(abs)) {
+    console.error(
+      '✗ Style Dictionary config not found:', sdConfig,
+      '\n  Set "styleDictionaryConfig" in figtree.config.json (default: sd.config.js).',
+    )
     process.exit(1)
   }
-
-  const tokens = await resolveBindableTokens(themePath)
-  const outDir = resolve(cwd, '.figtree')
-  mkdirSync(outDir, { recursive: true })
-  const outPath = resolve(outDir, 'resolved.json')
-  writeFileSync(
-    outPath,
-    JSON.stringify(
-      { schemaVersion: 1, generatedAt: new Date().toISOString(), tokens },
-      null,
-      2,
-    ) + '\n',
-  )
-
-  const s = tokens.filter((t) => t.kind === 'semantic').length
-  console.log(
-    `✓ Resolved ${tokens.length} bindable tokens (${s} semantic, ${tokens.length - s} primitive)`,
-  )
-  console.log('  → .figtree/resolved.json')
+  try {
+    console.log('→ Running Style Dictionary:', sdConfig)
+    execSync(`npx style-dictionary build --config ${abs}`, { stdio: 'inherit', cwd })
+    console.log('✓ Built .figtree/resolved.json (and CSS vars + theme) from DTCG sources')
+  } catch (e) {
+    console.error('✗ Style Dictionary build failed')
+    process.exit(1)
+  }
 } else if (cmd === 'capture') {
   const { runCapture } = await import('./captureCli.js')
   const opts = {}

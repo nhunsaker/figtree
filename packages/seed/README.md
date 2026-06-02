@@ -10,18 +10,18 @@ The full design lives in the team's internal spec (kept out of the repo).
 
 Early — not yet published (`private`). Implemented so far:
 
-- **`resolveBindableTokens(themePath)`** (`src/resolveTokens.js`) — extracts the
-  *bindable* token map (every `var(--NAME, FALLBACK)` value the app honors) from
-  a styled-components theme by bundling it with esbuild and evaluating it, so
-  template-literal values resolve. Raw primitives (not wrapped in `var()`) are
-  excluded. Returns `[{ name, value, kind: 'semantic' | 'primitive' }]`.
-- **`figtree-seed resolve`** — reads `figtree.config.json` (`themePath`),
-  resolves the bindable map, and writes `.figtree/resolved.json`. The bridge
-  (`figtree dev`) serves this at `GET /tokens/resolved`; the plugin's
-  **Sync Variables from code** button consumes it.
+- **`figtree-seed resolve`** — a thin wrapper around **Style Dictionary**. The
+  DTCG token sets (`tokens/{primitive,semantic,component}.json`) are the source
+  of truth; SD's `figtree/resolved-map` format emits `.figtree/resolved.json` —
+  one entry per token: `[{ id, cssVar, value, tier, type }]` where
+  `tier ∈ {primitive, semantic, component}`. Reads `figtree.config.json`
+  (`styleDictionaryConfig`, default `sd.config.js`). The bridge (`figtree dev`)
+  serves this at `GET /tokens/resolved`; the plugin's **Sync Variables** button
+  and `capture`'s annotator both consume it. (This retired the old
+  esbuild-bundle-and-eval theme resolver.)
 
   ```bash
-  figtree-seed resolve   # → .figtree/resolved.json
+  figtree-seed resolve   # → runs style-dictionary build → .figtree/resolved.json
   ```
 
 - **`figtree-seed capture`** (`src/captureCli.js`) — Playwright runner that

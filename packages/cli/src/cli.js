@@ -4,7 +4,7 @@ import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 import pc from 'picocolors'
 import { createServer } from './server'
-import { watchTokenFile } from './watch'
+import { watchTokenFile, watchSources } from './watch'
 import { runStyleDictionary } from './transform'
 import { openTokenPR } from './github'
 
@@ -42,22 +42,15 @@ program
     const config = loadConfig()
     const port = config.port ?? parseInt(opts.port)
 
+    // Token sources to watch (DTCG sets). Falls back to the legacy single
+    // tokenPath for pre-taxonomy apps.
+    const sources = config.tokenSources || (config.tokenPath ? [config.tokenPath] : [])
+
     console.log(pc.bold('\nFigtree'))
     console.log(pc.dim('  Namespace :') + ` ${config.namespace}`)
-    console.log(pc.dim('  Tokens    :') + ` ${config.tokenPath}`)
+    console.log(pc.dim('  Sources   :') + ` ${sources.join(', ') || '(none)'}`)
     console.log(pc.dim('  Port      :') + ` ${port}`)
 
-    const { read, stop } = watchTokenFile(config.tokenPath, (tokens) => {
-      const count = Object.keys(tokens).length
-      console.log(pc.cyan(`  → Tokens reloaded`) + pc.dim(` (${count} values)`))
-      if (config.styleDictionaryConfig) {
-        runStyleDictionary(config.styleDictionaryConfig)
-      }
-    })
-
-    // Resolved bindable token map + captured-component artifacts produced by
-    // figtree-seed. Read fresh on each request so re-seeding is picked up
-    // without restarting the bridge.
     const figtreeDir = resolve(process.cwd(), '.figtree')
     const resolvedPath = resolve(figtreeDir, 'resolved.json')
     const indexPath = resolve(figtreeDir, 'index.json')
@@ -66,11 +59,36 @@ program
       if (!existsSync(p)) return null
       try { return JSON.parse(readFileSync(p, 'utf-8')) } catch { return null }
     }
-    const readResolved = () => {
+    const readResolvedArray = () => {
       const data = readJson(resolvedPath)
       return data && (Array.isArray(data) ? data : data.tokens)
     }
+    const readResolved = () => readResolvedArray()
     const readIndex = () => readJson(indexPath)
+
+    // Build tokens once up front, then on every source change, so the resolved
+    // map the plugin/seed consume is always fresh.
+    const buildTokens = () => {
+      if (config.styleDictionaryConfig) runStyleDictionary(config.styleDictionaryConfig)
+    }
+    buildTokens()
+    const { stop } = watchSources(sources, buildTokens)
+
+    // GET /tokens/latest — the committed token values the plugin prefills its
+    // editor with. Prefer a legacy flat token file if present; otherwise derive
+    // a flat { cssVarName: value } map from the SD-built resolved map, so the
+    // DTCG taxonomy works without a hand-maintained flat file.
+    const legacyTokenAbs = config.tokenPath ? resolve(process.cwd(), config.tokenPath) : null
+    const read = () => {
+      if (legacyTokenAbs && existsSync(legacyTokenAbs)) {
+        try { return JSON.parse(readFileSync(legacyTokenAbs, 'utf-8')) } catch (e) { return {} }
+      }
+      const arr = readResolvedArray()
+      if (!arr) return {}
+      const flat = {}
+      for (const t of arr) if (t.cssVar) flat[t.cssVar.replace(/^--/, '')] = t.value
+      return flat
+    }
 
     // Look up an artifact by story id via the index. NEVER trust a raw path
     // from the caller (path-traversal safe).
@@ -123,7 +141,11 @@ program
     /** @type {import('./types').FigtreeCliConfig} */
     const defaults = {
       namespace: 'my-app',
-      tokenPath: 'tokens/tokens.json',
+      tokenSources: [
+        'tokens/primitive.json',
+        'tokens/semantic.json',
+        'tokens/component.json',
+      ],
       styleDictionaryConfig: 'sd.config.js',
       port: 7777,
     }

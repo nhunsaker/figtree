@@ -7,9 +7,10 @@ const PREVIEW_TTL_MS = 1000 * 60 * 60 * 24 // 24 hours
 /**
  * @param {string} namespace
  * @param {() => import('./types').TokenSet} getLatestTokens
- * @param {() => (Array<{name:string,value:string,kind:string}> | null)} [getResolvedTokens]
+ * @param {() => (Array<{id:string,cssVar:string,value:string,tier:string,type:string}> | null)} [getResolvedTokens]
  *   Returns the resolved bindable token map (from .figtree/resolved.json,
- *   produced by `figtree-seed`), or null if it hasn't been generated.
+ *   produced by Style Dictionary's `figtree/resolved-map` format), or null if
+ *   it hasn't been generated.
  * @param {() => (object | null)} [getArtifactIndex]
  *   Returns the captured-component index (.figtree/index.json), or null.
  * @param {(storyId: string) => (object | null)} [getArtifact]
@@ -90,14 +91,15 @@ export const createServer = (
   })
 
   // ─── GET /tokens/resolved ──────────────────────────────────────────────────
-  // The resolved *bindable* token map (semantic + primitive) produced by
-  // `figtree-seed`. The plugin uses it to create Variables and to bind
-  // captured values. 404 if seed hasn't generated it yet.
+  // The resolved *bindable* token map produced by Style Dictionary — one entry
+  // per token: { id, cssVar, value, tier, type }. The plugin uses it to create
+  // grouped Variables and to bind captured values; capture annotates against
+  // it. 404 if it hasn't been built yet.
   app.get('/tokens/resolved', (c) => {
     const resolved = getResolvedTokens ? getResolvedTokens() : null
     if (!resolved) {
       return c.json(
-        { error: 'No resolved token map. Run `figtree-seed resolve`.' },
+        { error: 'No resolved token map. Run `figtree-seed resolve` (Style Dictionary build).' },
         404,
       )
     }

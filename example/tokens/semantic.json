@@ -1,0 +1,35 @@
+{
+  "$version": "1.0.0",
+  "color": {
+    "action": {
+      "primary":       { "$value": "{color.blue.500}", "$type": "color" },
+      "primary-hover": { "$value": "{color.blue.700}", "$type": "color" }
+    },
+    "text": {
+      "primary":   { "$value": "{color.gray.950}", "$type": "color" },
+      "secondary": { "$value": "{color.gray.700}", "$type": "color" },
+      "on-action": { "$value": "{color.white}",    "$type": "color" },
+      "disabled":  { "$value": "{color.gray.500}", "$type": "color" }
+    },
+    "bg": {
+      "surface":  { "$value": "{color.white}", "$type": "color" },
+      "disabled": { "$value": "{color.white}", "$type": "color" }
+    },
+    "border": {
+      "default":  { "$value": "{color.blue.500}", "$type": "color" },
+      "subtle":   { "$value": "{color.gray.300}", "$type": "color" },
+      "disabled": { "$value": "{color.gray.500}", "$type": "color" }
+    },
+    "feedback": {
+      "danger":        { "$value": "{color.red.500}",    "$type": "color" },
+      "danger-hover":  { "$value": "{color.red.700}",    "$type": "color" },
+      "success":       { "$value": "{color.green.500}",  "$type": "color" },
+      "success-hover": { "$value": "{color.green.700}",  "$type": "color" },
+      "warning":       { "$value": "{color.orange.500}", "$type": "color" }
+    }
+  },
+  "radius": {
+    "control": { "$value": "{radius.200}",  "$type": "dimension" },
+    "pill":    { "$value": "{radius.full}", "$type": "dimension" }
+  }
+}
