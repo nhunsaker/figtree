@@ -1,6 +1,6 @@
 {
   "name": "@metatoy/figtree-react",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "React provider for Figtree design tokens",
   "license": "MIT",
   "keywords": [
