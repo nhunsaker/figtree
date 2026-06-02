@@ -6,6 +6,35 @@ and `@metatoy/figtree-react` stay lean.
 
 The full design lives in the team's internal spec (kept out of the repo).
 
+## Install & link the CLI
+
+This package is **private / not published to npm yet**, so there's no
+`npm i @metatoy/figtree-seed`. To get the `figtree-seed` command working:
+
+```bash
+# 1. install this package's deps (from this directory)
+cd packages/seed
+npm install                 # pulls esbuild (Playwright is optional — see capture)
+
+# 2. expose the `figtree-seed` bin on your PATH
+npm link                    # creates a global symlink to bin → src/cli.js
+```
+
+`figtree-seed` is now runnable from anywhere. To remove the global symlink
+later: `npm unlink -g @metatoy/figtree-seed` (or `npm rm -g @metatoy/figtree-seed`).
+
+**Prefer not to touch your global PATH?** Skip `npm link` and invoke the source
+directly from the consuming app:
+
+```bash
+node /abs/path/to/figtree/packages/seed/src/cli.js resolve
+```
+
+> **Where you run it matters.** `figtree-seed` reads `figtree.config.json`,
+> `sd.config.js`, and `tokens/` from the **current working directory** — i.e.
+> your *app* (e.g. `example/`), **not** this package directory. Run the commands
+> below from the app you're capturing, after `npm link`ing here once.
+
 ## Status
 
 Early — not yet published (`private`). Implemented so far:
