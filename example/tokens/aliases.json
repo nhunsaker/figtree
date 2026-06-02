@@ -1,0 +1,18 @@
+{
+  "$comment": "Legacy CSS-var name → new DTCG token id. Dual-emitted as a back-compat layer (dist aliases.css) during migration, then deleted. Names here mirror a typical pre-taxonomy styled-components theme (e.g. the Figtree POC).",
+  "primaryAction": "color.action.primary",
+  "primaryActionHover": "color.action.primary-hover",
+  "primaryText": "color.text.primary",
+  "secondaryTextColor": "color.text.secondary",
+  "errorColor": "color.feedback.danger",
+  "successColor": "color.feedback.success",
+  "warningColor": "color.feedback.warning",
+  "primaryInputBorder": "color.border.subtle",
+  "primaryInputBorderActive": "color.border.default",
+  "borderRadius": "radius.control",
+  "roundBorderRadius": "radius.pill",
+  "blue5": "color.blue.500",
+  "blue7": "color.blue.700",
+  "red5": "color.red.500",
+  "gray9": "color.gray.900"
+}

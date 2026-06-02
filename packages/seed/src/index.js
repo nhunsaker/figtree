@@ -1,1 +1,7 @@
-export { resolveBindableTokens } from './resolveTokens.js'
+// Public library surface for @metatoy/figtree-seed.
+//
+// The resolved bindable token map is now produced by Style Dictionary (see
+// `figtree-seed resolve`, a thin SD wrapper), not by scraping a theme module —
+// so the old `resolveBindableTokens` export is gone. What remains useful as a
+// library is the token-annotation layer used by `capture`.
+export { buildTokenIndex, annotateTree, matchColor, matchDimension } from './annotateTokens.js'

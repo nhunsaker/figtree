@@ -1,6 +1,11 @@
 {
-  "namespace": "my-app",
-  "tokenPath": "tokens/tokens.json",
+  "namespace": "figtree-example",
+  "tokenSources": [
+    "tokens/primitive.json",
+    "tokens/semantic.json",
+    "tokens/component.json",
+    "tokens/aliases.json"
+  ],
   "styleDictionaryConfig": "sd.config.js",
   "port": 7777
 }

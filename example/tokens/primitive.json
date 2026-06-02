@@ -1,0 +1,58 @@
+{
+  "$version": "1.0.0",
+  "color": {
+    "white":       { "$value": "#FFFFFF", "$type": "color" },
+    "black":       { "$value": "#000000", "$type": "color" },
+    "transparent": { "$value": "#00000000", "$type": "color" },
+    "blue": {
+      "50":  { "$value": "#E7F0FD", "$type": "color" },
+      "100": { "$value": "#C9D8FC", "$type": "color" },
+      "300": { "$value": "#4588F3", "$type": "color" },
+      "500": { "$value": "#0F65EF", "$type": "color" },
+      "700": { "$value": "#083884", "$type": "color" },
+      "900": { "$value": "#0C4EB9", "$type": "color" }
+    },
+    "gray": {
+      "50":  { "$value": "#F4F4F4", "$type": "color" },
+      "100": { "$value": "#EDEDED", "$type": "color" },
+      "300": { "$value": "#D7D7D7", "$type": "color" },
+      "500": { "$value": "#AAAAAA", "$type": "color" },
+      "700": { "$value": "#757575", "$type": "color" },
+      "800": { "$value": "#666666", "$type": "color" },
+      "900": { "$value": "#333333", "$type": "color" },
+      "950": { "$value": "#222222", "$type": "color" }
+    },
+    "red": {
+      "50":  { "$value": "#FDECE9", "$type": "color" },
+      "500": { "$value": "#EE3322", "$type": "color" },
+      "700": { "$value": "#B81A21", "$type": "color" }
+    },
+    "green": {
+      "500": { "$value": "#68AF15", "$type": "color" },
+      "700": { "$value": "#618910", "$type": "color" }
+    },
+    "orange": {
+      "300": { "$value": "#B54708", "$type": "color" },
+      "500": { "$value": "#F47F16", "$type": "color" }
+    }
+  },
+  "radius": {
+    "100":  { "$value": "2px",    "$type": "dimension" },
+    "200":  { "$value": "4px",    "$type": "dimension" },
+    "300":  { "$value": "8px",    "$type": "dimension" },
+    "full": { "$value": "9999px", "$type": "dimension" }
+  },
+  "space": {
+    "100": { "$value": "4px",  "$type": "dimension" },
+    "200": { "$value": "8px",  "$type": "dimension" },
+    "300": { "$value": "12px", "$type": "dimension" },
+    "400": { "$value": "16px", "$type": "dimension" }
+  },
+  "font": {
+    "size":   { "300": { "$value": "15px", "$type": "dimension" } },
+    "weight": {
+      "regular":  { "$value": "400", "$type": "fontWeight" },
+      "semibold": { "$value": "600", "$type": "fontWeight" }
+    }
+  }
+}

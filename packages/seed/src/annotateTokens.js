@@ -1,9 +1,12 @@
 // Token annotation for captured layer values.
 //
-// Exact, normalized matching against the resolved bindable token map:
+// Exact, normalized matching against the resolved bindable token map
+// (Style Dictionary's `figtree/resolved-map`: { id, cssVar, value, tier, type }):
 //   colors → canonical #rrggbbaa (lowercase); dimensions → px number.
-// On collision, best-guess is semantic-over-primitive (then resolved order),
-// and ALL matches are kept as `candidates` so the plugin can offer a switch.
+// On collision, best-guess prefers the most specific tier
+// (component > semantic > primitive), then resolved order; ALL matches are kept
+// as `candidates` so the plugin can offer a switch.
+// (Phase 4 adds property affinity — fill→bg, stroke→border, etc.)
 
 const expandHex = (h) => {
   h = h.toLowerCase()
@@ -56,24 +59,37 @@ export const buildTokenIndex = (resolved) => {
   return { colors, dims }
 }
 
-// Best-guess: semantic before primitive; stable sort keeps resolved order
-// among same-kind matches. Returns { token, candidates }.
-const pick = (cands) => {
+// Binding = property affinity first, then tier precedence.
+//
+// Tier rank alone is ambiguous: one color value (e.g. #0F65EF) can match a
+// `bg`, a `border`, AND a `text` token. The captured node's *property* tells us
+// the role it plays — a frame fill wants a `bg` token, a stroke a `border`, a
+// text fill a `text`, a corner radius a `radius`. We filter candidates to that
+// role, then break remaining ties by tier (component > semantic > primitive).
+// If no candidate carries the role, fall back to the full set (tier-only).
+const TIER_RANK = { component: 0, semantic: 1, primitive: 2 }
+
+// role → the path segment a matching token id should contain (`.bg`, `.text`,
+// `.border`, `.radius`). Matched on `.<role>` so `color.bg.surface`,
+// `button.primary.bg.default`, and `button.radius` all qualify.
+const byTier = (a, b) => (TIER_RANK[a.tier] ?? 9) - (TIER_RANK[b.tier] ?? 9)
+
+const pick = (cands, role) => {
   if (!cands || !cands.length) return { token: null, candidates: [] }
-  const best = [...cands].sort(
-    (a, b) => (a.kind === 'semantic' ? 0 : 1) - (b.kind === 'semantic' ? 0 : 1),
-  )[0]
-  return { token: best.name, candidates: cands.map((c) => c.name) }
+  const roled = role ? cands.filter((c) => c.id.includes('.' + role)) : []
+  const pool = roled.length ? roled : cands
+  const best = [...pool].sort(byTier)[0]
+  return { token: best.id, candidates: cands.map((c) => c.id) }
 }
 
-export const matchColor = (index, value) => {
+export const matchColor = (index, value, role) => {
   const c = normalizeColor(value)
-  return c ? pick(index.colors.get(c)) : { token: null, candidates: [] }
+  return c ? pick(index.colors.get(c), role) : { token: null, candidates: [] }
 }
 
-export const matchDimension = (index, value) => {
+export const matchDimension = (index, value, role) => {
   const d = normalizeDimension(value)
-  return d == null ? { token: null, candidates: [] } : pick(index.dims.get(d))
+  return d == null ? { token: null, candidates: [] } : pick(index.dims.get(d), role)
 }
 
 // Walk a captured LayerNode tree and attach `figtree.tokens` / `.candidates`
@@ -85,10 +101,13 @@ export const annotateTree = (node, index) => {
   const set = (key, res) => {
     if (res.token) { tokens[key] = res.token; candidates[key] = res.candidates }
   }
-  if (node.fills && node.fills[0]) set('fill', matchColor(index, node.fills[0].raw))
-  if (node.strokes && node.strokes[0]) set('stroke', matchColor(index, node.strokes[0].raw))
-  if (typeof node.cornerRadius === 'number') set('cornerRadius', matchDimension(index, node.cornerRadius))
+  // A fill on a TEXT node is foreground (`text`); on a frame it's `bg`.
+  const fillRole = node.type === 'TEXT' ? 'text' : 'bg'
+  if (node.fills && node.fills[0]) set('fill', matchColor(index, node.fills[0].raw, fillRole))
+  if (node.strokes && node.strokes[0]) set('stroke', matchColor(index, node.strokes[0].raw, 'border'))
+  if (typeof node.cornerRadius === 'number') set('cornerRadius', matchDimension(index, node.cornerRadius, 'radius'))
   if (Array.isArray(node.effects)) {
+    // No shadow tokens yet → no role, falls back to tier-only.
     node.effects.forEach((e, i) => { if (e.color) set(`effect${i}`, matchColor(index, e.color.raw)) })
   }
   if (Object.keys(tokens).length) node.figtree = { tokens, candidates }

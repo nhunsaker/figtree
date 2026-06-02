@@ -3,8 +3,17 @@ dist/
 *.log
 .DS_Store
 
+# Style Dictionary generated outputs — built from tokens/*.json, never committed.
+example/src/tokens/generated/
+example/.figtree/
+
 # This is a pnpm workspace; per-package npm lockfiles are not used.
 package-lock.json
 
 # Local planning / spec docs — kept out of the repo
 /spec/
+
+# Local agent guidance & working docs — kept out of the repo
+/CLAUDE.md
+/PLAN.md
+/TODO.md
