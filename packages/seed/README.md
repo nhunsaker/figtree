@@ -65,33 +65,39 @@ Early — not yet published (`private`). Implemented so far:
   Playwright is an **optional peer dependency** — it (and its ~150 MB browser)
   is only needed for `capture`, never for `resolve` or a plain install.
 
+  The URLs below align with the **figtree-demo** services (`npm run demo`):
+
+  | Service | URL |
+  |---|---|
+  | App (Vite) | `http://localhost:5173` |
+  | Bridge (`figtree dev`) | `http://localhost:7777` |
+  | Storybook | `http://localhost:6006` |
+
   ```bash
   # one-time, only if you'll run capture:
   npm install playwright        # its postinstall fetches Chromium automatically
   #   (if browsers were skipped: npx playwright install chromium)
 
-  # capture
-  figtree-seed capture                          # uses seed.storybookUrl in figtree.config.json
-  figtree-seed capture --only=Button.stories    # filter by importPath/title/id
-  figtree-seed capture --changed                # only re-capture stories whose hash changed
-  figtree-seed capture --storybook-url=https://callout-admin-ui.dev.buzzfeed.io/storybook
+  # capture against the demo's Storybook (set once in figtree.config.json)
+  figtree-seed capture                                      # uses seed.storybookUrl
+  figtree-seed capture --only=Button.stories                # filter by importPath/title/id
+  figtree-seed capture --changed                            # skip unchanged stories
+  figtree-seed capture --storybook-url=http://localhost:6006  # override on the fly
   ```
 
-  **Dev Storybook URL** (callout_admin_ui):
-  `https://callout-admin-ui.dev.buzzfeed.io/storybook` — exposes `/index.json`
-  and `/iframe.html` and currently has the StyledComponents/Button stories
-  (default / outline / outline-dark / outline-red / red / …). Set it in
-  `figtree.config.json` once:
+  Set `seed.storybookUrl` in `figtree.config.json` so you don't need the flag:
 
   ```jsonc
   {
-    "seed": { "storybookUrl": "https://callout-admin-ui.dev.buzzfeed.io/storybook" }
+    "seed": { "storybookUrl": "http://localhost:6006" }
   }
   ```
 
   The captured artifacts are then served by the bridge at
-  `GET /artifacts` (the index) and `GET /artifact?id=<storyId>` (one
-  artifact, looked up by id — never a raw filesystem path).
+  `GET http://localhost:7777/artifacts` (the index) and
+  `GET http://localhost:7777/artifact?id=<storyId>` (one artifact, looked up
+  by id — never a raw filesystem path). The Figma plugin's **Storybook** tab
+  fetches from these endpoints to list and insert captured components.
 
 - **`captureRoot(el)`** (`src/capture.js`) — in-page DOM walker (our own
   capture engine, no `htmlToFigma` dependency). Maps element →
@@ -107,10 +113,11 @@ Early — not yet published (`private`). Implemented so far:
   the resolved bindable map. Idempotent; preserves raw values for the plugin
   materializer.
 
-Validated end-to-end against the real resolved map: a Button DOM (jsdom) →
-`captureRoot` → `annotateTree` binds `fill`/`stroke` → `primaryAction`,
-`cornerRadius` → `borderRadius`, text fill → `white`, with all candidates
-recorded.
+Validated end-to-end against the figtree-demo resolved map: a Button DOM →
+`captureRoot` → `annotateTree` binds `fill` → `button.primary.bg.default`,
+`stroke` → `button.primary.border.default`, `cornerRadius` → `button.radius`,
+text fill → `button.primary.text.default`, using tier + property-affinity
+ranking (component > semantic > primitive).
 
 Planned: the **plugin materializer** (turns each `LayerNode` into a Figma
 component bound to Variables via `setBoundVariable`); pseudo-elements and
