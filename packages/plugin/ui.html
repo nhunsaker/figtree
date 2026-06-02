@@ -111,7 +111,12 @@
 
     <!-- ── TOKENS VIEW ─────────────────────────────────────────────────── -->
     <div id="view-tokens" class="view active">
-      <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
+      <label style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Tokens <span class="hint">(from Figma Variables — editable)</span></span>
+        <span class="hint" style="font-weight:400;cursor:pointer;">
+          <input type="checkbox" id="autoSync" style="width:auto;margin:0 4px 0 0;vertical-align:middle;cursor:pointer;" />Auto-sync
+        </span>
+      </label>
       <textarea id="tokens">{}</textarea>
 
       <!-- hidden action buttons — click handlers delegated from toolbar -->
@@ -200,7 +205,7 @@
       }
 
       // ── persisted settings ─────────────────────────────────────────────
-      var LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl', sb: 'figtree.storybookUrl' };
+      var LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl', sb: 'figtree.storybookUrl', auto: 'figtree.autoSync' };
       function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
       function lsSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
 
@@ -221,13 +226,31 @@
 
       function trimOrigin() { return $('origin').value.trim().replace(/\/$/, ''); }
 
+      // ── editor dirty-state + token apply ────────────────────────────────
+      var dirty = false;       // user has unsaved edits in the token box
+      var pendingAuto = null;  // buffered auto update awaiting an explicit Refresh
+
+      function applyTokens(tokens, isAuto) {
+        $('tokens').value = JSON.stringify(tokens, null, 2);
+        dirty = false; pendingAuto = null;
+        setStatus(Object.keys(tokens).length + ' token(s) loaded from Figma Variables' + (isAuto ? ' (auto).' : '.'));
+      }
+      $('tokens').addEventListener('input', function() { dirty = true; });
+
       // ── messages from main thread ──────────────────────────────────────
       onmessage = function(event) {
         var msg = event.data.pluginMessage;
         if (!msg) return;
         if (msg.type === 'tokens') {
-          $('tokens').value = JSON.stringify(msg.tokens, null, 2);
-          setStatus(Object.keys(msg.tokens).length + ' token(s) loaded from Figma Variables.');
+          // Auto updates must not clobber in-progress edits — offer Refresh instead.
+          if (msg.source === 'auto' && dirty) {
+            pendingAuto = msg.tokens;
+            setStatus('Figma Variables changed — <a href="#" id="applyAuto">Refresh</a>');
+            var ap = $('applyAuto');
+            if (ap) ap.onclick = function(e) { e.preventDefault(); applyTokens(pendingAuto, true); };
+          } else {
+            applyTokens(msg.tokens, msg.source === 'auto');
+          }
         } else if (msg.type === 'sync-result') {
           setStatus('✓ Variables synced — <b>' + msg.created + '</b> created, ' + msg.updated + ' updated' +
             (msg.skipped ? ', ' + msg.skipped + ' skipped' : '') + ' (collection "' + msg.collection + '").');
@@ -241,6 +264,18 @@
       function post(type, extra) {
         parent.postMessage({ pluginMessage: Object.assign({ type: type }, extra) }, '*');
       }
+
+      // ── auto-sync toggle (default ON) — starts/stops the main-thread watch ─
+      var autoStored = lsGet(LS.auto);
+      var autoOn = autoStored === '' ? true : autoStored === '1';
+      $('autoSync').checked = autoOn;
+      post('set-auto', { enabled: autoOn });
+      $('autoSync').addEventListener('change', function(e) {
+        var on = e.target.checked;
+        lsSet(LS.auto, on ? '1' : '0');
+        post('set-auto', { enabled: on });
+        setStatus(on ? 'Auto-sync on — watching Figma Variables.' : 'Auto-sync off.');
+      });
 
       // ── toolbar action wiring ──────────────────────────────────────────
       $('tb-import').onclick   = function() { $('committed').click(); };
@@ -276,6 +311,7 @@
           var res = await fetch(origin + '/tokens/latest');
           if (!res.ok) throw new Error('HTTP ' + res.status);
           $('tokens').value = JSON.stringify(await res.json(), null, 2);
+          dirty = false; pendingAuto = null;
           setStatus('Loaded committed tokens from the bridge.');
         } catch(e) { setStatus('Failed to load committed tokens: ' + e.message, true); }
       };

@@ -10,6 +10,15 @@ GitHub Release tagged `vX.Y.Z`, which triggers the npm publish workflow.
 
 ## [Unreleased]
 
+### Changed
+- **`@metatoy/figtree-plugin`** (private, not published to npm) — the token editor
+  now **auto-syncs from Figma Variables** while the plugin is open: it loads on
+  open and live-refreshes via a ~1.5s poll (with `documentchange` as a best-effort
+  accelerator), so manual "Reload from Figma" is no longer required. An
+  **Auto-sync** toggle (default on, persisted in `localStorage`) controls it, and
+  auto updates never overwrite in-progress edits — a "Refresh" affordance is shown
+  instead. Plugin bumped to **1.3.0**.
+
 ## [1.2.0] - 2026-06-01
 
 The 3-tier **DTCG token taxonomy**: tokens are authored as DTCG sets and built

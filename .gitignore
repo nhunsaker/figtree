@@ -3,6 +3,9 @@ dist/
 *.log
 .DS_Store
 
+# Packaged tarball/zip artifacts (e.g. packages/seed.zip for manual install)
+*.zip
+
 # Style Dictionary generated outputs — built from tokens/*.json, never committed.
 example/src/tokens/generated/
 example/.figtree/
