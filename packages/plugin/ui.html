@@ -481,6 +481,7 @@
       var OTHER = '—other—';          // sentinel component value for untyped rows
       var sbRows = [];                           // [{ storyId, component, story, importPath }]
       var sbHasComponents = false;               // any row carries a component?
+      var sbFilterOpen = false;                  // is the [Filter] chip expanded?
       var sbFilters = {};                        // active component filters (empty = all)
       var sbSelected = {};                       // selected storyIds
       var sbArtifactCache = {};                  // importPath -> component artifact JSON
@@ -521,6 +522,7 @@
               return (a.component || '').localeCompare(b.component || '') || a.story.localeCompare(b.story);
             });
             sbHasComponents = sbRows.some(function(r) { return r.component; });
+            sbFilterOpen = false;
             sbFilters = {};
             sbSelected = {};
             sbArtifactCache = {};
@@ -538,22 +540,30 @@
       $('loadStories').onclick = loadStories;
 
       // ── Filter chips ────────────────────────────────────────────────────
+      // Collapsed by default: a single [Filter] chip. Activating it reveals the
+      // per-component chips; deactivating hides them and clears any selection.
       function renderChips() {
         var box = $('sbFilters');
         box.innerHTML = '';
         if (!sbHasComponents) { box.hidden = true; return; }
         box.hidden = false;
 
+        var filterChip = document.createElement('span');
+        filterChip.className = 'sb-chip' + (sbFilterOpen ? ' active' : '');
+        filterChip.textContent = 'Filter';
+        filterChip.onclick = function() {
+          sbFilterOpen = !sbFilterOpen;
+          if (!sbFilterOpen) sbFilters = {};   // collapsing clears the filter
+          renderChips(); renderTable(); updateBulk();
+        };
+        box.appendChild(filterChip);
+
+        if (!sbFilterOpen) return;             // categories hidden until expanded
+
         var comps = {}; var hasOther = false;
         sbRows.forEach(function(r) { if (r.component) comps[r.component] = true; else hasOther = true; });
         var names = Object.keys(comps).sort();
         if (hasOther) names.push(OTHER);
-
-        var allChip = document.createElement('span');
-        allChip.className = 'sb-chip' + (Object.keys(sbFilters).length === 0 ? ' active' : '');
-        allChip.textContent = 'All';
-        allChip.onclick = function() { sbFilters = {}; renderChips(); renderTable(); updateBulk(); };
-        box.appendChild(allChip);
 
         names.forEach(function(name) {
           var chip = document.createElement('span');
