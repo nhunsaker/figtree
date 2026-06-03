@@ -198,6 +198,70 @@ export const captureNode = (el, parentRect) => {
   return node
 }
 
+// ── Root trimming (spec: figtree-capture-trim-spec.md) ──────────────────────
+// Captured roots are the story's full-width container with the real component
+// nested inside empty wrappers. These pure helpers trim the tree to the
+// meaningful component so inserts/previews are tight. Run in Node (captureCli)
+// after capture, before annotation.
+
+/** True if the node or any descendant paints something (fill/stroke) or is TEXT. */
+export const hasContent = (node) => {
+  if (!node) return false
+  if (node.type === 'TEXT') return true
+  if ((node.fills && node.fills.length) || (node.strokes && node.strokes.length)) return true
+  return (node.children || []).some(hasContent)
+}
+
+/** Bounding box of content-bearing descendants, in `root`'s local coords (root at 0,0). */
+export const contentBBox = (root) => {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, found = false
+  const walk = (node, ox, oy) => {
+    const x = ox + (node.x || 0), y = oy + (node.y || 0)
+    const paints = node.type === 'TEXT' ||
+      (node.fills && node.fills.length) || (node.strokes && node.strokes.length)
+    if (paints) {
+      const w = node.width || 0, h = node.height || 0
+      if (x < x0) x0 = x
+      if (y < y0) y0 = y
+      if (x + w > x1) x1 = x + w
+      if (y + h > y1) y1 = y + h
+      found = true
+    }
+    for (const c of node.children || []) walk(c, x, y)
+  }
+  walk(root, -(root.x || 0), -(root.y || 0)) // normalize: root draws at origin
+  if (!found || x1 <= x0 || y1 <= y0) return null
+  return { minX: x0, minY: y0, maxX: x1, maxY: y1 }
+}
+
+/**
+ * Trim a captured tree to its meaningful component: descend through pure
+ * pass-through wrappers (no own fill/stroke, single non-text content child),
+ * then crop the resulting node to its content bounding box.
+ */
+export const tightenRoot = (root) => {
+  if (!root) return root
+  let node = root
+  while (true) {
+    const selfVisual = (node.fills && node.fills.length) || (node.strokes && node.strokes.length)
+    if (selfVisual) break // node paints (e.g. a card surface) → keep it
+    const kids = (node.children || []).filter(hasContent)
+    if (kids.length === 1 && kids[0].type !== 'TEXT') { node = kids[0]; continue }
+    break // multiple content children (a row) / a leaf / a text wrapper → stop
+  }
+  const bb = contentBBox(node)
+  if (!bb) return node
+  for (const child of node.children || []) {
+    child.x = (child.x || 0) - bb.minX
+    child.y = (child.y || 0) - bb.minY
+  }
+  node.x = 0
+  node.y = 0
+  node.width = bb.maxX - bb.minX
+  node.height = bb.maxY - bb.minY
+  return node
+}
+
 /** Entry point: capture a root element with itself at the origin (0,0). */
 export const captureRoot = (el) => captureNode(el, el.getBoundingClientRect())
 

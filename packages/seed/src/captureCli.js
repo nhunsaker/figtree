@@ -8,6 +8,7 @@ import { createHash } from 'crypto'
 import { dirname, resolve, basename, extname } from 'path'
 import { build } from 'esbuild'
 import { buildTokenIndex, annotateTree } from './annotateTokens.js'
+import { tightenRoot } from './capture.js'
 
 // Playwright is an OPTIONAL peer dep — only `capture` needs it, and it pulls a
 // ~150 MB browser. Lazy-load it so plain installs and `resolve` stay lean.
@@ -159,7 +160,7 @@ export const runCapture = async (opts) => {
         await page.close()
         continue
       }
-      const tree = annotateTree(rawTree, index)
+      const tree = annotateTree(tightenRoot(rawTree), index)
       const hash = 'sha256:' + sha256(JSON.stringify(tree))
 
       // --changed: reuse the previous artifact if hash matches
