@@ -107,6 +107,63 @@
       .sb-empty { padding: 20px; text-align: center; color: #888; font-size: 11px; line-height: 1.6; }
       .sb-check { display: flex; align-items: center; gap: 6px; font-weight: 600; margin: 10px 0 4px; }
       .sb-check input { width: auto; margin: 0; cursor: pointer; }
+
+      /* ── tokens table view ── */
+      .tk-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .tk-head > label { margin: 0; }
+      .tk-head .tk-head-right { display: flex; align-items: center; gap: 8px; }
+      .tk-raw-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; flex: 0 0 28px; padding: 0;
+        border: 1px solid #d9d9d9; border-radius: 5px;
+        background: #fff; color: #555; cursor: pointer;
+      }
+      .tk-raw-btn svg { display: block; pointer-events: none; }
+      .tk-raw-btn:hover { background: #f0f0f0; }
+      .tk-raw-btn.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+      .tk-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 8px; }
+      .tk-filters[hidden] { display: none; }
+      .tk-chip {
+        font-size: 10px; padding: 3px 9px; border-radius: 11px; border: 1px solid #d9d9d9;
+        background: #fff; color: #555; cursor: pointer; user-select: none; flex: 0 0 auto;
+      }
+      .tk-chip.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+      .tk-table-wrap { max-height: 340px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; margin-top: 8px; }
+      .tk-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+      .tk-table th {
+        position: sticky; top: 0; background: #f5f5f5; text-align: left; font-weight: 600;
+        padding: 6px 8px; border-bottom: 1px solid #e0e0e0; color: #666; z-index: 1;
+      }
+      .tk-table td { padding: 4px 8px; border-bottom: 1px solid #f2f2f2; vertical-align: middle; }
+      .tk-table tbody tr:hover { background: #fafafa; }
+      .tk-col-icon { width: 30px; }
+      .tk-col-action { width: 30px; }
+      .tk-swatch {
+        width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,.15);
+        display: block;
+      }
+      .tk-glyph {
+        width: 18px; height: 18px; border-radius: 4px; background: #e9ecef; color: #868e96;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .tk-glyph svg { display: block; width: 12px; height: 12px; }
+      .tk-val {
+        width: 100%; font-family: ui-monospace, Menlo, monospace; font-size: 11px;
+        padding: 3px 6px; border: 1px solid #d9d9d9; border-radius: 5px;
+      }
+      .tk-val.invalid { border-color: #c0341d; }
+      .tk-name {
+        font-family: ui-monospace, Menlo, monospace; font-size: 11px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+      }
+      .tk-del {
+        width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px;
+        background: transparent; color: #999; font-size: 13px; line-height: 1; cursor: pointer; flex: 0 0 auto;
+      }
+      .tk-del:hover { color: #c0341d; }
+      .tk-empty { padding: 20px; text-align: center; color: #888; font-size: 11px; line-height: 1.6; }
+      .tk-rawwrap { margin-top: 8px; }
+      .tk-rawwrap[hidden] { display: none; }
     </style>
   </head>
   <body>
@@ -154,21 +211,45 @@
 
     <!-- ── TOKENS VIEW ─────────────────────────────────────────────────── -->
     <div id="view-tokens" class="view active">
-      <label style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Tokens <span class="hint">(from Figma Variables — editable)</span></span>
-        <span class="hint" style="font-weight:400;cursor:pointer;">
-          <input type="checkbox" id="autoSync" style="width:auto;margin:0 4px 0 0;vertical-align:middle;cursor:pointer;" />Auto-sync
-        </span>
-      </label>
-      <textarea id="tokens">{}</textarea>
+      <div class="tk-head">
+        <label>Tokens <span class="hint">(from Figma Variables — editable)</span></label>
+        <div class="tk-head-right">
+          <span class="hint" style="font-weight:400;cursor:pointer;">
+            <input type="checkbox" id="autoSync" style="width:auto;margin:0 4px 0 0;vertical-align:middle;cursor:pointer;" />Auto-sync
+          </span>
+          <button class="tk-raw-btn" id="tkRaw" title="Raw JSON editor">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.478 1.647a.5.5 0 1 0-.956-.294l-4 13a.5.5 0 0 0 .956.294zM4.854 4.146a.5.5 0 0 1 0 .708L1.707 8l3.147 3.146a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0m6.292 0a.5.5 0 0 0 0 .708L14.293 8l-3.147 3.146a.5.5 0 0 0 .708.708l3.5-3.5a.5.5 0 0 0 0-.708l-3.5-3.5a.5.5 0 0 0-.708 0"/></svg>
+          </button>
+        </div>
+      </div>
 
-      <!-- hidden action buttons — click handlers delegated from toolbar -->
-      <div style="display:none;">
-        <button id="reload">Reload from Figma</button>
-        <button id="committed">Load committed</button>
-        <button id="preview">Preview in app</button>
-        <button id="openpr">Open PR</button>
-        <button id="syncvars">Sync Variables</button>
+      <div class="tk-filters" id="tkFilters" hidden></div>
+
+      <div class="tk-table-wrap" id="tkTableWrap">
+        <table class="tk-table">
+          <thead>
+            <tr>
+              <th class="tk-col-icon"></th>
+              <th>Name</th>
+              <th>Value</th>
+              <th class="tk-col-action"></th>
+            </tr>
+          </thead>
+          <tbody id="tkBody"></tbody>
+        </table>
+      </div>
+
+      <div class="tk-rawwrap" id="tkRawWrap" hidden>
+        <textarea id="tokens">{}</textarea>
+
+        <!-- hidden action buttons — click handlers delegated from toolbar -->
+        <div style="display:none;">
+          <button id="reload">Reload from Figma</button>
+          <button id="committed">Load committed</button>
+          <button id="preview">Preview in app</button>
+          <button id="openpr">Open PR</button>
+          <button id="syncvars">Sync Variables</button>
+        </div>
       </div>
 
       <div class="status" id="status"></div>
@@ -303,31 +384,28 @@
 
       function trimOrigin() { return $('origin').value.trim().replace(/\/$/, ''); }
 
-      // ── editor dirty-state + token apply ────────────────────────────────
-      var dirty = false;       // user has unsaved edits in the token box
-      var pendingAuto = null;  // buffered auto update awaiting an explicit Refresh
+      // ── working set (single source of truth) + editor dirty-state ───────
+      var tokenSet = {};            // { name: value } working set — both views derive from this
+      var tokenFilters = {};        // active group filters (empty = all visible)
+      var tokenFilterOpen = false;  // [Filter] chip expanded?
+      var rawOpen = false;          // </> raw editor visible?
+      var livePreviewId = null;     // active live-preview session id (string|null)
+      var pushTimer = null;         // debounce handle for live PUT
+      var mirroring = false;        // guards the textarea input listener from set→raw loops
+      var dirty = false;            // raw editor has unsaved edits
+      var pendingAuto = null;       // buffered auto update awaiting an explicit Refresh
 
       function applyTokens(tokens, isAuto) {
-        $('tokens').value = JSON.stringify(tokens, null, 2);
-        dirty = false; pendingAuto = null;
+        setTokenSet(tokens, { silent: true });
         setStatus(Object.keys(tokens).length + ' token(s) loaded from Figma Variables' + (isAuto ? ' (auto).' : '.'));
       }
-      $('tokens').addEventListener('input', function() { dirty = true; });
 
       // ── messages from main thread ──────────────────────────────────────
       onmessage = function(event) {
         var msg = event.data.pluginMessage;
         if (!msg) return;
         if (msg.type === 'tokens') {
-          // Auto updates must not clobber in-progress edits — offer Refresh instead.
-          if (msg.source === 'auto' && dirty) {
-            pendingAuto = msg.tokens;
-            setStatus('Figma Variables changed — <a href="#" id="applyAuto">Refresh</a>');
-            var ap = $('applyAuto');
-            if (ap) ap.onclick = function(e) { e.preventDefault(); applyTokens(pendingAuto, true); };
-          } else {
-            applyTokens(msg.tokens, msg.source === 'auto');
-          }
+          handleTokensMessage(msg);
         } else if (msg.type === 'sync-result') {
           setStatus('✓ Variables synced — <b>' + msg.created + '</b> created, ' + msg.updated + ' updated' +
             (msg.skipped ? ', ' + msg.skipped + ' skipped' : '') + ' (collection "' + msg.collection + '").');
@@ -357,6 +435,7 @@
         var on = e.target.checked;
         lsSet(LS.auto, on ? '1' : '0');
         post('set-auto', { enabled: on });
+        if (!on) endSession();   // tearing down auto-sync ends any live-preview session
         setStatus(on ? 'Auto-sync on — watching Figma Variables.' : 'Auto-sync off.');
       });
 
@@ -386,24 +465,21 @@
         setStatus('Creating Figma Variables from ' + tokens.length + ' tokens…');
       };
 
-      // ── Load committed tokens ──────────────────────────────────────────
+      // ── Load committed tokens (→ working set) ──────────────────────────
       $('committed').onclick = async function() {
         var origin = trimOrigin();
         if (!origin) return setStatus('Set Bridge origin in Settings.', true);
         try {
           var res = await fetch(origin + '/tokens/latest');
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          $('tokens').value = JSON.stringify(await res.json(), null, 2);
-          dirty = false; pendingAuto = null;
+          var json = await res.json();
+          setTokenSet(json, { silent: true });
           setStatus('Loaded committed tokens from the bridge.');
         } catch(e) { setStatus('Failed to load committed tokens: ' + e.message, true); }
       };
 
-      // ── Preview in app ─────────────────────────────────────────────────
+      // ── Preview in app — ESTABLISHES the live session (§7 option 1) ─────
       $('preview').onclick = async function() {
-        var body;
-        try { body = JSON.parse($('tokens').value); }
-        catch(e) { return setStatus('Tokens must be valid JSON.', true); }
         var origin = trimOrigin();
         var appUrl = $('appUrl').value.trim();
         if (!origin || !appUrl) return setStatus('Set Bridge origin and App URL in Settings.', true);
@@ -411,22 +487,21 @@
         try {
           var res = await fetch(origin + '/preview', {
             method: 'POST', headers: { 'content-type': 'text/plain' },
-            body: JSON.stringify(body),
+            body: JSON.stringify(tokenSet),
           });
           if (!res.ok) throw new Error('HTTP ' + res.status);
           var d = await res.json();
+          livePreviewId = d.id;
           var url = appUrl + (appUrl.includes('?') ? '&' : '?') + 'preview=' + d.id;
           window.open(url, '_blank');
           post('notify', { message: 'Preview ready: ' + d.id });
-          setStatus('Preview <b>' + d.id + '</b> created. <a href="' + url + '" target="_blank">Open app ↗</a>');
+          setStatus('Preview <b>' + d.id + '</b> created. <a href="' + url + '" target="_blank">Open app ↗</a>' +
+            ($('autoSync').checked ? ' — live editing on.' : '.'));
         } catch(e) { setStatus('Preview failed: ' + e.message, true); }
       };
 
-      // ── Preview in Storybook ───────────────────────────────────────────
+      // ── Preview in Storybook (→ working set) ───────────────────────────
       $('tb-preview-storybook').onclick = async function() {
-        var body;
-        try { body = JSON.parse($('tokens').value); }
-        catch(e) { return setStatus('Tokens must be valid JSON.', true); }
         var origin = trimOrigin();
         var sbUrl  = $('storybookUrl').value.trim().replace(/\/$/, '');
         if (!origin) return setStatus('Set Bridge origin in Settings.', true);
@@ -435,7 +510,7 @@
         try {
           var res = await fetch(origin + '/preview', {
             method: 'POST', headers: { 'content-type': 'text/plain' },
-            body: JSON.stringify(body),
+            body: JSON.stringify(tokenSet),
           });
           if (!res.ok) throw new Error('HTTP ' + res.status);
           var d = await res.json();
@@ -446,11 +521,9 @@
         } catch(e) { setStatus('Preview failed: ' + e.message, true); }
       };
 
-      // ── Open PR ────────────────────────────────────────────────────────
+      // ── Open PR (→ working set) ─────────────────────────────────────────
       $('openpr').onclick = async function() {
-        var edits;
-        try { edits = JSON.parse($('tokens').value); }
-        catch(e) { return setStatus('Tokens must be valid JSON.', true); }
+        var edits = tokenSet;                       // working set, not parsed textarea
         var origin  = trimOrigin();
         var editUrl = $('githubUrl').value.trim();
         if (!origin)  return setStatus('Set Bridge origin in Settings.', true);
@@ -470,12 +543,292 @@
         if (!copied) {
           try { var buf=$('copybuf'); buf.value=json; buf.focus(); buf.select(); copied=document.execCommand('copy'); } catch(e) {}
         }
-        if (!copied) $('tokens').value = json;
+        if (!copied) { if (!rawOpen) toggleRaw(); $('tokens').value = json; }
         window.open(editUrl, '_blank');
-        setStatus((copied ? '✓ Copied <code>tokens.json</code> to clipboard. ' : 'Could not auto-copy — merged file is in the Tokens box. ') +
+        setStatus((copied ? '✓ Copied <code>tokens.json</code> to clipboard. ' : 'Could not auto-copy — merged file is in the raw editor. ') +
           'In GitHub: <b>⌘A → paste → Commit changes… → Propose changes</b>.' +
           (changed.length ? '<br/>Changed: <b>' + changed.join(', ') + '</b>' : ''));
       };
+
+      // ════════════════════════════════════════════════════════════════════
+      // TOKENS TABLE — type/group inference + rendering (spec §2, §4, §8)
+      // ════════════════════════════════════════════════════════════════════
+
+      // §2.1 — infer a token's type from its value string.
+      function inferType(v) {
+        var s = String(v).trim();
+        if (/^#([0-9a-f]{3,8})$/i.test(s) || /^(rgb|hsl)a?\(/i.test(s) || s === 'transparent') return 'COLOR';
+        if (s === 'true' || s === 'false') return 'BOOLEAN';
+        if (/^-?\d*\.?\d+(px|rem|em|%|vh|vw|pt)?$/.test(s)) return 'FLOAT';
+        return 'STRING';
+      }
+
+      // §2.2 — smart sub-group for the filter chips.
+      function groupOf(name) {
+        var p = String(name).split('-');
+        if (p[0] === 'color') {
+          var g = p[1];
+          return (g === 'white' || g === 'black' || g === 'transparent') ? 'base' : g;
+        }
+        if (p[0] === 'button') {
+          return (['primary', 'danger', 'success', 'outline'].indexOf(p[1]) !== -1) ? p[1] : 'button';
+        }
+        return p[0];
+      }
+
+      // Sorted, unique list of groups over the current working set.
+      function tokenGroups() {
+        var seen = {}, out = [], names = Object.keys(tokenSet);
+        for (var i = 0; i < names.length; i++) {
+          var g = groupOf(names[i]);
+          if (!seen[g]) { seen[g] = true; out.push(g); }
+        }
+        out.sort();
+        return out;
+      }
+
+      // §4.1 — validate a raw string against an inferred type.
+      function validateValue(val, type) {
+        var s = String(val).trim();
+        if (type === 'COLOR') return /^#([0-9a-f]{3,8})$/i.test(s) || /^(rgb|hsl)a?\(/i.test(s) || s === 'transparent';
+        if (type === 'FLOAT') return /^-?\d*\.?\d+(px|rem|em|%|vh|vw|pt)?$/.test(s);
+        if (type === 'BOOLEAN') return s === 'true' || s === 'false';
+        return true; // STRING accepts anything
+      }
+
+      // §8/§12 glyph path data, keyed by type.
+      var TK_GLYPH_PATHS = {
+        FLOAT: 'M8.39 12.648a1 1 0 0 0-.015.18c0 .305.21.508.5.508.266 0 .492-.172.555-.477l.554-2.703h1.204c.421 0 .617-.234.617-.547 0-.312-.188-.53-.617-.53h-.985l.516-2.524h1.265c.43 0 .618-.227.618-.547 0-.313-.188-.524-.618-.524h-1.046l.476-2.304a1 1 0 0 0 .016-.164.51.51 0 0 0-.516-.516.54.54 0 0 0-.539.43l-.523 2.554H7.617l.477-2.304c.008-.04.015-.118.015-.164a.51.51 0 0 0-.523-.516.54.54 0 0 0-.531.43L6.53 5.484H5.414c-.43 0-.617.22-.617.532s.187.539.617.539h.906l-.515 2.523H4.609c-.421 0-.609.219-.609.531s.188.547.61.547h.976l-.516 2.492c-.008.04-.015.125-.015.18 0 .305.21.508.5.508.265 0 .492-.172.554-.477l.555-2.703h2.242zm-1-6.109h2.266l-.515 2.563H6.859l.532-2.563z',
+        STRING: 'm2.244 13.081.943-2.803H6.66l.944 2.803H8.86L5.54 3.75H4.322L1 13.081zm2.7-7.923L6.34 9.314H3.51l1.4-4.156zm9.146 7.027h.035v.896h1.128V8.125c0-1.51-1.114-2.345-2.646-2.345-1.736 0-2.59.916-2.666 2.174h1.108c.068-.718.595-1.19 1.517-1.19.971 0 1.518.52 1.518 1.464v.731H12.19c-1.647.007-2.522.8-2.522 2.058 0 1.319.957 2.18 2.345 2.18 1.06 0 1.716-.43 2.078-1.011zm-1.763.035c-.752 0-1.456-.397-1.456-1.244 0-.65.424-1.115 1.408-1.115h1.805v.834c0 .896-.752 1.525-1.757 1.525',
+        BOOLEAN: 'M5 3a5 5 0 0 0 0 10h6a5 5 0 0 0 0-10zm6 9a4 4 0 1 1 0-8 4 4 0 0 1 0 8'
+      };
+
+      // Escape a string for safe interpolation into HTML attribute/text contexts.
+      function tkEscape(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
+      // Leading-cell HTML: swatch for colors, type glyph otherwise.
+      function iconCellHtml(name, value) {
+        var type = inferType(value);
+        if (type === 'COLOR') {
+          return '<span class="tk-swatch" style="background:' + tkEscape(value) + '"></span>';
+        }
+        var d = TK_GLYPH_PATHS[type] || TK_GLYPH_PATHS.STRING;
+        return '<span class="tk-glyph" title="' + tkEscape(type) + '">'
+          + '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="' + d + '"/></svg>'
+          + '</span>';
+      }
+
+      // §4 — render the token table from the working set into #tkBody.
+      function renderTokenTable() {
+        var body = $('tkBody');
+        body.innerHTML = '';
+
+        var hasFilter = Object.keys(tokenFilters).length > 0;
+        var names = Object.keys(tokenSet);
+        if (hasFilter) names = names.filter(function(n) { return !!tokenFilters[groupOf(n)]; });
+        names.sort();
+
+        if (!names.length) {
+          var trE = document.createElement('tr');
+          var tdE = document.createElement('td');
+          tdE.colSpan = 4;
+          tdE.className = 'tk-empty';
+          tdE.textContent = Object.keys(tokenSet).length ? 'No tokens match the filter.' : 'No tokens.';
+          trE.appendChild(tdE); body.appendChild(trE);
+          return;
+        }
+
+        names.forEach(function(name) {
+          var tr = document.createElement('tr');
+
+          var tdIcon = document.createElement('td');
+          tdIcon.className = 'tk-col-icon';
+          tdIcon.innerHTML = iconCellHtml(name, tokenSet[name]);
+          tr.appendChild(tdIcon);
+
+          var tdName = document.createElement('td');
+          var spanName = document.createElement('span');
+          spanName.className = 'tk-name';
+          spanName.title = name;
+          spanName.textContent = name;
+          tdName.appendChild(spanName); tr.appendChild(tdName);
+
+          var tdVal = document.createElement('td');
+          var input = document.createElement('input');
+          input.className = 'tk-val';
+          input.value = tokenSet[name];
+          input.oninput = (function(rowName, iconCell, inputEl) {
+            return function() {
+              var raw = inputEl.value;
+              var t = inferType(raw);
+              if (validateValue(raw, t)) {
+                tokenSet[rowName] = raw;
+                inputEl.classList.remove('invalid');
+                inputEl.title = '';
+                iconCell.innerHTML = iconCellHtml(rowName, raw);
+                onTokenEdit();
+              } else {
+                inputEl.classList.add('invalid');
+                inputEl.title = 'Invalid ' + t.toLowerCase() + ' value';
+              }
+            };
+          })(name, tdIcon, input);
+          tdVal.appendChild(input); tr.appendChild(tdVal);
+
+          var tdAct = document.createElement('td');
+          tdAct.className = 'tk-col-action';
+          var del = document.createElement('button');
+          del.className = 'tk-del';
+          del.title = 'Remove from working set';
+          del.textContent = '✕'; // ✕
+          del.onclick = (function(rowName) {
+            return function() { delete tokenSet[rowName]; renderTokenTable(); onTokenEdit(); };
+          })(name);
+          tdAct.appendChild(del); tr.appendChild(tdAct);
+
+          body.appendChild(tr);
+        });
+      }
+
+      // ════════════════════════════════════════════════════════════════════
+      // TOKENS TABLE — working set, raw mirror, filter chips, live preview
+      // ════════════════════════════════════════════════════════════════════
+
+      // Working set is the single source of truth; table + raw editor are views.
+      function setTokenSet(map, opts) {
+        opts = opts || {};
+        var next = {};
+        if (map) { var keys = Object.keys(map); for (var i = 0; i < keys.length; i++) next[keys[i]] = map[keys[i]]; }
+        tokenSet = next;
+        dirty = false; pendingAuto = null;
+        renderTokenChips();
+        renderTokenTable();
+        syncRawFromSet();
+        if (!opts.silent) setStatus(Object.keys(tokenSet).length + ' token(s) loaded.');
+      }
+
+      // ── raw <-> set two-way mirror (§6) ──────────────────────────────────
+      // mirroring guards the textarea input listener from looping on programmatic writes.
+      function syncRawFromSet() {
+        mirroring = true;
+        $('tokens').value = JSON.stringify(tokenSet, null, 2);
+        mirroring = false;
+      }
+
+      function applyRawFromText() {
+        var parsed;
+        try { parsed = JSON.parse($('tokens').value); }
+        catch (e) { setStatus('Raw JSON invalid — table unchanged.', true); return; }
+        setTokenSet(parsed);   // valid → adopt + re-render
+      }
+
+      // Textarea listener — only the raw editor drives the set, and only when open.
+      var rawEditTimer = null;
+      $('tokens').addEventListener('input', function() {
+        if (mirroring) return;        // ignore programmatic mirror writes
+        if (!rawOpen) return;         // table is the active editor
+        dirty = true;
+        if (rawEditTimer) clearTimeout(rawEditTimer);
+        rawEditTimer = setTimeout(applyRawFromText, 300);
+      });
+
+      // ── filter chips (§5) — view-only, mirrors storybook renderChips() ───
+      function renderTokenChips() {
+        var box = $('tkFilters');
+        box.innerHTML = '';
+        if (rawOpen) { box.hidden = true; return; }              // raw editor replaces the table view
+        var groups = tokenGroups();
+        if (groups.length <= 1) { box.hidden = true; return; }   // hidden if one group
+        box.hidden = false;
+
+        var filterChip = document.createElement('span');
+        filterChip.className = 'tk-chip' + (tokenFilterOpen ? ' active' : '');
+        filterChip.textContent = 'Filter';
+        filterChip.onclick = function() {
+          tokenFilterOpen = !tokenFilterOpen;
+          if (!tokenFilterOpen) tokenFilters = {};   // collapsing clears the filter
+          renderTokenChips(); renderTokenTable();
+        };
+        box.appendChild(filterChip);
+
+        if (!tokenFilterOpen) return;                // groups hidden until expanded
+
+        groups.forEach(function(group) {
+          var chip = document.createElement('span');
+          chip.className = 'tk-chip' + (tokenFilters[group] ? ' active' : '');
+          chip.textContent = group;
+          chip.onclick = function() {
+            if (tokenFilters[group]) delete tokenFilters[group]; else tokenFilters[group] = true;
+            renderTokenChips(); renderTokenTable();
+          };
+          box.appendChild(chip);
+        });
+      }
+
+      // ── raw editor toggle (</>) (§6) ─────────────────────────────────────
+      // Raw editor REPLACES the table view: opening it hides the filter chips +
+      // table; closing restores them (renderTokenChips recomputes chip visibility).
+      function toggleRaw() {
+        rawOpen = !rawOpen;
+        $('tkRawWrap').hidden = !rawOpen;
+        $('tkTableWrap').hidden = rawOpen;
+        $('tkRaw').classList.toggle('active', rawOpen);
+        if (rawOpen) { $('tkFilters').hidden = true; syncRawFromSet(); }  // serialize set into the editor
+        else renderTokenChips();                   // restore correct chip visibility
+      }
+      $('tkRaw').onclick = toggleRaw;
+
+      // ── post-mutation hook (called by the table on edit + delete) ────────
+      function onTokenEdit() {
+        syncRawFromSet();                          // keep raw mirror current
+        if (!$('autoSync').checked) return;        // no push when auto-sync off
+        if (livePreviewId) schedulePush();
+        else setStatus('Click Preview in app to start live editing.');
+      }
+
+      // ── live preview push (§7) ───────────────────────────────────────────
+      function schedulePush() {
+        if (pushTimer) clearTimeout(pushTimer);
+        pushTimer = setTimeout(pushPreview, 250);
+      }
+
+      async function pushPreview() {
+        if (!livePreviewId) return;
+        try {
+          var res = await fetch(trimOrigin() + '/preview/' + livePreviewId, {
+            method: 'PUT', headers: { 'content-type': 'text/plain' },
+            body: JSON.stringify(tokenSet),
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          setStatus('Live preview updated (' + Object.keys(tokenSet).length + ' tokens).');
+        } catch (e) { setStatus('Live preview update failed: ' + e.message, true); }
+      }
+
+      // ── live session teardown (§7) — start lives in $('preview').onclick ─
+      async function endSession() {
+        if (!livePreviewId) return;
+        var id = livePreviewId;
+        livePreviewId = null;                       // clear first (best-effort delete)
+        try { await fetch(trimOrigin() + '/preview/' + id, { method: 'DELETE' }); }
+        catch (e) { /* best-effort; ignore */ }
+      }
+      window.addEventListener('unload', function() { endSession(); });
+
+      // ── inbound Figma-Variable pull + keep-pull dirty buffer (§7.1) ──────
+      // "dirty" now means: the raw editor is open AND has unsaved edits.
+      function handleTokensMessage(msg) {
+        if (msg.source === 'auto' && rawOpen && dirty) {
+          pendingAuto = msg.tokens;
+          setStatus('Figma Variables changed — <a href="#" id="applyAuto">Refresh</a>');
+          var ap = $('applyAuto');
+          if (ap) ap.onclick = function(e) { e.preventDefault(); applyTokens(pendingAuto, true); };
+        } else {
+          applyTokens(msg.tokens, msg.source === 'auto');
+        }
+      }
 
       // ── Storybook table state ──────────────────────────────────────────
       var OTHER = '—other—';          // sentinel component value for untyped rows
@@ -832,7 +1185,8 @@
         } catch (e) { setSbStatus('Insert failed: ' + e.message, true); hideProgress(); }
       }
 
-      // initialise — show tokens view, views start hidden via CSS (.view { display:none })
+      // initialise — seed an empty working set (renders the table/chips), show tokens view
+      setTokenSet({}, { silent: true });
       showView('tokens');
     </script>
   </body>
