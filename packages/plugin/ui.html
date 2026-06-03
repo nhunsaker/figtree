@@ -508,6 +508,12 @@
       // is cropped to the bounding box of drawn content — captured roots are
       // often the story's full-width container, so cropping makes the component
       // fill the thumbnail instead of being a speck in an empty frame.
+      // Thumbnail size and the max downscale we'll tolerate before a preview
+      // loses all context (reads as mostly-white space) and the type-icon is
+      // clearer. Derived from the captured size distribution: single components
+      // are ≤~360px (≤12x), full-width layout/row captures are 500–1200px.
+      var PREVIEW_PX = 30, MAX_DOWNSCALE = 12;
+
       function buildSvg(root) {
         if (!root || !root.width || !root.height) return null;
         var parts = [], count = { n: 0 };
@@ -544,8 +550,13 @@
         walk(root, -(root.x || 0), -(root.y || 0), 0);
         if (!parts.length || bx1 <= bx0 || by1 <= by0) return null;
 
+        var bw = bx1 - bx0, bh = by1 - by0;
+        // Size gate: if the component must shrink more than MAX_DOWNSCALE× to
+        // fit the thumbnail, it loses context → fall back to the type-icon.
+        if (Math.max(bw, bh) > PREVIEW_PX * MAX_DOWNSCALE) return null;
+
         var pad = 4;
-        var vx = bx0 - pad, vy = by0 - pad, vw = (bx1 - bx0) + pad * 2, vh = (by1 - by0) + pad * 2;
+        var vx = bx0 - pad, vy = by0 - pad, vw = bw + pad * 2, vh = bh + pad * 2;
         return '<svg viewBox="' + vx + ' ' + vy + ' ' + vw + ' ' + vh + '" width="30" height="30" preserveAspectRatio="xMidYMid meet" '
           + 'style="border-radius:4px;background:#fff;border:1px solid #eee;">' + parts.join('') + '</svg>';
       }
@@ -812,11 +823,9 @@
             items.push({ node: story.root, label: label });
           }
           if (!items.length) throw new Error('no roots resolved');
-          if (items.length === 1 && !labelInserts()) {
-            post('insert-node', { node: items[0].node });   // existing single path
-          } else {
-            post('insert-nodes', { items: items, withLabels: labelInserts() });
-          }
+          // Always route through insert-nodes so every insert uses the no-stack
+          // placement (below existing content), single or bulk, labelled or not.
+          post('insert-nodes', { items: items, withLabels: labelInserts() });
           setSbStatus('Inserting ' + items.length + ' component' + (items.length === 1 ? '' : 's') + '…');
         } catch (e) { setSbStatus('Insert failed: ' + e.message, true); hideProgress(); }
       }
