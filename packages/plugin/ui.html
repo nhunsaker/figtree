@@ -384,6 +384,20 @@
 
       function trimOrigin() { return $('origin').value.trim().replace(/\/$/, ''); }
 
+      // Best-effort self-report of an inserted component's geometry to the bridge
+      // /verify endpoint. Fired from the main thread's figtree-verify message.
+      function verifyInsert(storyId, bbox) {
+        var origin = trimOrigin();
+        if (!origin || !storyId) return;
+        fetch(origin + '/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storyId: storyId, bbox: bbox }),
+        }).catch(function(e) {
+          if (window.console && console.warn) console.warn('figtree verify failed:', e && e.message);
+        });
+      }
+
       // ── working set (single source of truth) + editor dirty-state ───────
       var tokenSet = {};            // { name: value } working set — both views derive from this
       var tokenFilters = {};        // active group filters (empty = all visible)
@@ -416,6 +430,8 @@
           clearSelection();
           var n = msg.count || 1;
           setSbStatus('✓ Inserted ' + n + ' component' + (n === 1 ? '' : 's') + ' into the canvas.');
+        } else if (msg.type === 'figtree-verify') {
+          verifyInsert(msg.storyId, msg.bbox);
         } else if (msg.type === 'error') {
           hideProgress();
           setStatus('Plugin error: ' + msg.message, true);
@@ -1175,7 +1191,7 @@
             var story = (art.stories || []).find(function(s) { return s.id === ids[i]; });
             if (!story || !story.root) throw new Error('artifact has no root for ' + ids[i]);
             var label = (row.component ? row.component + ' / ' : '') + row.story;
-            items.push({ node: story.root, label: label });
+            items.push({ node: story.root, label: label, storyId: ids[i] });
           }
           if (!items.length) throw new Error('no roots resolved');
           // Always route through insert-nodes so every insert uses the no-stack
