@@ -4,6 +4,10 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm -r --parallel dev",
-    "clean": "pnpm -r --parallel exec rm -rf dist"
+    "clean": "pnpm -r --parallel exec rm -rf dist",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.8"
   }
 }
