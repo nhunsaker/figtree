@@ -769,7 +769,11 @@
         bulk.hidden = sel === 0;
         if (sel > 0) {
           $('sbBulkCount').textContent = sel + ' selected';
-          $('sbInsertAll').textContent = 'Insert all (' + visibleRows().length + ')';
+          // One action button, shown by count: "Insert selected" for a single
+          // pick, "Insert all (N)" for many. Both insert the selected set.
+          $('sbInsertSel').style.display = sel === 1 ? '' : 'none';
+          $('sbInsertAll').style.display = sel >= 2 ? '' : 'none';
+          $('sbInsertAll').textContent = 'Insert all (' + sel + ')';
         }
         // hide per-row insert buttons while selecting
         var btns = document.querySelectorAll('.sb-row-insert');
@@ -777,9 +781,7 @@
       }
 
       $('sbInsertSel').onclick = function() { insertMany(selectedIds()); };
-      $('sbInsertAll').onclick = function() {
-        insertMany(visibleRows().map(function(r) { return r.storyId; }));
-      };
+      $('sbInsertAll').onclick = function() { insertMany(selectedIds()); };
 
       // ── Progress ────────────────────────────────────────────────────────
       function showProgress(done, total) {
