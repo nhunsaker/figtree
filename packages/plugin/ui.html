@@ -493,6 +493,97 @@
         return 'hsl(' + h + ', 55%, 55%)';
       }
 
+      // ── Inline SVG preview from a captured LayerNode tree ────────────────
+      var sbPreviewCache = {};      // storyId -> svg html string, or null = keep icon
+      var sbPreviewObserver = null; // lazy-loads previews for visible rows
+
+      function fillCss(fill) {
+        if (!fill || !fill.color) return null;
+        var c = fill.color, o = fill.opacity == null ? 1 : fill.opacity;
+        return 'rgba(' + Math.round(c.r * 255) + ',' + Math.round(c.g * 255) + ',' + Math.round(c.b * 255) + ',' + o + ')';
+      }
+
+      // Walk the tree (capped) → SVG rects. Geometry is parent-relative, so we
+      // accumulate offsets; the root is normalised to draw at 0,0. The viewBox
+      // is cropped to the bounding box of drawn content — captured roots are
+      // often the story's full-width container, so cropping makes the component
+      // fill the thumbnail instead of being a speck in an empty frame.
+      function buildSvg(root) {
+        if (!root || !root.width || !root.height) return null;
+        var parts = [], count = { n: 0 };
+        var bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+        function grow(x, y, w, h) {
+          if (x < bx0) bx0 = x; if (y < by0) by0 = y;
+          if (x + w > bx1) bx1 = x + w; if (y + h > by1) by1 = y + h;
+        }
+
+        function walk(node, ox, oy, depth) {
+          if (!node || count.n > 40 || depth > 4) return;
+          var x = ox + (node.x || 0), y = oy + (node.y || 0);
+          var fill = node.fills && node.fills[0];
+          if (node.type === 'TEXT') {
+            var tc = fillCss(fill) || 'rgba(70,70,70,0.85)';
+            var th = Math.max(2, (node.height || 10) * 0.45), ty = y + (node.height || 10) * 0.28, tw = node.width || 20;
+            parts.push('<rect x="' + x + '" y="' + ty + '" width="' + tw + '" height="' + th + '" rx="2" fill="' + tc + '"/>');
+            grow(x, ty, tw, th); count.n++;
+          } else {
+            var f = fillCss(fill);
+            var s = fillCss(node.strokes && node.strokes[0]);
+            if (f || s) {
+              var w = node.width || 0, h = node.height || 0;
+              var rx = typeof node.cornerRadius === 'number' ? node.cornerRadius : 0;
+              parts.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + rx + '"'
+                + (f ? ' fill="' + f + '"' : ' fill="none"')
+                + (s ? ' stroke="' + s + '" stroke-width="1"' : '') + '/>');
+              grow(x, y, w, h); count.n++;
+            }
+          }
+          var kids = node.children || [];
+          for (var i = 0; i < kids.length; i++) walk(kids[i], x, y, depth + 1);
+        }
+        walk(root, -(root.x || 0), -(root.y || 0), 0);
+        if (!parts.length || bx1 <= bx0 || by1 <= by0) return null;
+
+        var pad = 4;
+        var vx = bx0 - pad, vy = by0 - pad, vw = (bx1 - bx0) + pad * 2, vh = (by1 - by0) + pad * 2;
+        return '<svg viewBox="' + vx + ' ' + vy + ' ' + vw + ' ' + vh + '" width="30" height="30" preserveAspectRatio="xMidYMid meet" '
+          + 'style="border-radius:4px;background:#fff;border:1px solid #eee;">' + parts.join('') + '</svg>';
+      }
+
+      function iconHtml(r) {
+        var ch = (r.component || r.story || '?').charAt(0).toUpperCase();
+        return '<div class="sb-prev" style="background:' + compColor(r.component || r.story) + '">' + ch + '</div>';
+      }
+
+      function ensureObserver() {
+        if (sbPreviewObserver || !('IntersectionObserver' in window)) return;
+        sbPreviewObserver = new IntersectionObserver(function(entries) {
+          entries.forEach(function(e) {
+            if (!e.isIntersecting) return;
+            sbPreviewObserver.unobserve(e.target);
+            loadPreview(e.target);
+          });
+        }, { root: $('sbTableWrap'), rootMargin: '80px' });
+      }
+
+      async function loadPreview(cell) {
+        var r = cell._row;
+        if (!r) return;
+        if (sbPreviewCache[r.storyId] !== undefined) {
+          if (sbPreviewCache[r.storyId]) cell.innerHTML = sbPreviewCache[r.storyId];
+          return;
+        }
+        var origin = trimOrigin();
+        if (!origin) return;
+        try {
+          var art = await fetchComponentFile(origin, r.importPath, r.storyId);
+          var story = (art.stories || []).find(function(s) { return s.id === r.storyId; });
+          var svg = story && story.root ? buildSvg(story.root) : null;
+          sbPreviewCache[r.storyId] = svg;          // null → keep the icon
+          if (svg) cell.innerHTML = svg;
+        } catch (e) { sbPreviewCache[r.storyId] = null; }
+      }
+
       function visibleRows() {
         var active = Object.keys(sbFilters);
         if (!active.length) return sbRows.slice();
@@ -526,6 +617,8 @@
             sbFilters = {};
             sbSelected = {};
             sbArtifactCache = {};
+            sbPreviewCache = {};
+            if (sbPreviewObserver) { sbPreviewObserver.disconnect(); sbPreviewObserver = null; }
             renderChips();
             renderTable();
             updateBulk();
@@ -610,12 +703,17 @@
           };
           tdc.appendChild(cb); tr.appendChild(tdc);
 
-          // preview (Phase 1: type icon)
+          // preview — SVG from the LayerNode (lazy), type-icon placeholder
           var tdp = document.createElement('td'); tdp.className = 'sb-col-prev';
-          var icon = document.createElement('div'); icon.className = 'sb-prev';
-          icon.style.background = compColor(r.component || r.story);
-          icon.textContent = (r.component || r.story || '?').charAt(0).toUpperCase();
-          tdp.appendChild(icon); tr.appendChild(tdp);
+          tdp._row = r;
+          if (sbPreviewCache[r.storyId]) {
+            tdp.innerHTML = sbPreviewCache[r.storyId];   // already rendered
+          } else {
+            tdp.innerHTML = iconHtml(r);
+            ensureObserver();
+            if (sbPreviewObserver) sbPreviewObserver.observe(tdp); else loadPreview(tdp);
+          }
+          tr.appendChild(tdp);
 
           // component
           var tdcomp = document.createElement('td'); tdcomp.className = 'sb-col-comp';
