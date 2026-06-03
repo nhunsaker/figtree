@@ -37,6 +37,23 @@ export const createServer = (
     }
   }, 1000 * 60 * 60)
 
+  // Plugin self-reports each inserted component's post-layout geometry here:
+  // { storyId, bbox, meta, createdAt }. `latestVerifyId` tracks the newest so
+  // the canvas verifier can poll /verify/latest without knowing the id.
+  /** @type {Map<string, { storyId: string, bbox: object, meta: object, createdAt: number }>} */
+  const verifications = new Map()
+  let latestVerifyId = null
+
+  // Prune expired verifications every hour (same TTL as previews)
+  setInterval(() => {
+    const now = Date.now()
+    for (const [id, entry] of verifications) {
+      if (now - entry.createdAt > PREVIEW_TTL_MS) {
+        verifications.delete(id)
+      }
+    }
+  }, 1000 * 60 * 60)
+
   const app = new Hono()
 
   // Allow requests from any origin — the plugin UI and the React app
@@ -81,6 +98,38 @@ export const createServer = (
   app.delete('/preview/:id', (c) => {
     previews.delete(c.req.param('id'))
     return c.json({ deleted: true })
+  })
+
+  // ─── POST /verify ─────────────────────────────────────────────────────────
+  // Plugin posts the post-layout geometry of an inserted component so the
+  // canvas can be reconciled against the captured artifact. Returns a short id.
+  app.post('/verify', async (c) => {
+    const { storyId, bbox, meta } = await c.req.json()
+    const id = nanoid(8)
+    verifications.set(id, { storyId, bbox, meta, createdAt: Date.now() })
+    latestVerifyId = id
+    return c.json({ id })
+  })
+
+  // ─── GET /verify/latest ───────────────────────────────────────────────────
+  // The most recently reported verification. MUST be registered before
+  // /verify/:id or Hono treats "latest" as an :id param.
+  app.get('/verify/latest', (c) => {
+    const entry = latestVerifyId ? verifications.get(latestVerifyId) : null
+    if (!entry) {
+      return c.json({ error: 'No verification reported yet' }, 404)
+    }
+    return c.json(entry)
+  })
+
+  // ─── GET /verify/:id ──────────────────────────────────────────────────────
+  // A specific verification by id.
+  app.get('/verify/:id', (c) => {
+    const entry = verifications.get(c.req.param('id'))
+    if (!entry) {
+      return c.json({ error: 'Verification not found or expired' }, 404)
+    }
+    return c.json(entry)
   })
 
   // ─── GET /tokens/latest ───────────────────────────────────────────────────
@@ -136,6 +185,7 @@ export const createServer = (
       ok: true,
       namespace,
       activePreviews: previews.size,
+      verifications: verifications.size,
     })
   })
 
