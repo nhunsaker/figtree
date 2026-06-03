@@ -64,6 +64,49 @@
       .status a { color: #16a34a; }
       .status.err { color: #c0341d; }
       .hint { color: #888; font-weight: 400; font-size: 11px; }
+
+      /* ── storybook table view ──────────────────────────────────────── */
+      .sb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .sb-refresh { flex: 0 0 30px; padding: 7px 6px; }
+      .sb-filters { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 8px; }
+      .sb-filters[hidden] { display: none; }
+      .sb-chip {
+        font-size: 10px; padding: 3px 9px; border-radius: 11px; border: 1px solid #d9d9d9;
+        background: #fff; color: #555; cursor: pointer; user-select: none; flex: 0 0 auto;
+      }
+      .sb-chip.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+      .sb-table-wrap { max-height: 340px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px; }
+      .sb-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+      .sb-table th {
+        position: sticky; top: 0; background: #f5f5f5; text-align: left; font-weight: 600;
+        padding: 6px 8px; border-bottom: 1px solid #e0e0e0; color: #666; z-index: 1;
+      }
+      .sb-table td { padding: 4px 8px; border-bottom: 1px solid #f2f2f2; vertical-align: middle; }
+      .sb-table tbody tr:hover { background: #fafafa; }
+      .sb-table input[type=checkbox] { width: auto; margin: 0; cursor: pointer; }
+      .sb-col-check { width: 22px; } .sb-col-prev { width: 40px; } .sb-col-action { width: 56px; }
+      .sb-col-comp[hidden], td.sb-col-comp[hidden] { display: none; }
+      .sb-prev {
+        width: 30px; height: 30px; border-radius: 5px; display: flex; align-items: center;
+        justify-content: center; color: #fff; font-weight: 700; font-size: 12px;
+      }
+      .sb-row-insert {
+        font-size: 10px; padding: 4px 7px; background: #eee; color: #1a1a1a;
+        border-radius: 5px; width: 100%;
+      }
+      .sb-bulk {
+        display: flex; align-items: center; gap: 6px; margin-top: 10px;
+        padding: 8px; background: #f0f6ff; border: 1px solid #cfe0f5; border-radius: 6px;
+      }
+      .sb-bulk[hidden] { display: none; }
+      .sb-bulk-count { font-size: 11px; font-weight: 600; color: #1e3a5f; margin-right: auto; }
+      .sb-bulk button { flex: 0 0 auto; padding: 6px 9px; font-size: 11px; }
+      .sb-progress { margin-top: 8px; height: 4px; background: #eee; border-radius: 2px; overflow: hidden; }
+      .sb-progress[hidden] { display: none; }
+      .sb-progress-bar { height: 100%; width: 0; background: #16a34a; transition: width 0.15s; }
+      .sb-empty { padding: 20px; text-align: center; color: #888; font-size: 11px; line-height: 1.6; }
+      .sb-check { display: flex; align-items: center; gap: 6px; font-weight: 600; margin: 10px 0 4px; }
+      .sb-check input { width: auto; margin: 0; cursor: pointer; }
     </style>
   </head>
   <body>
@@ -133,14 +176,37 @@
 
     <!-- ── STORYBOOK VIEW ─────────────────────────────────────────────── -->
     <div id="view-storybook" class="view">
-      <label>Insert from Storybook <span class="hint">(captured components)</span></label>
-      <div class="row" style="margin-top:4px;">
-        <select id="storyPick" style="flex:3;"></select>
-        <button class="secondary" id="loadStories" style="flex:0 0 32px;padding:9px 6px;" title="Refresh story list">
+      <div class="sb-head">
+        <label style="margin:0;">Insert from Storybook <span class="hint">(captured components)</span></label>
+        <button class="secondary sb-refresh" id="loadStories" title="Refresh story list">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
         </button>
-        <button class="primary" id="insert" style="flex:1.2;">Insert</button>
       </div>
+
+      <div class="sb-filters" id="sbFilters" hidden></div>
+
+      <div class="sb-table-wrap" id="sbTableWrap">
+        <table class="sb-table" id="sbTable">
+          <thead>
+            <tr>
+              <th class="sb-col-check"><input type="checkbox" id="sbCheckAll" title="Select all visible" /></th>
+              <th class="sb-col-prev"></th>
+              <th class="sb-col-comp" id="sbThComp">Component</th>
+              <th class="sb-col-story">Story</th>
+              <th class="sb-col-action"></th>
+            </tr>
+          </thead>
+          <tbody id="sbBody"></tbody>
+        </table>
+      </div>
+
+      <div class="sb-bulk" id="sbBulk" hidden>
+        <span class="sb-bulk-count" id="sbBulkCount">0 selected</span>
+        <button class="secondary" id="sbInsertSel">Insert selected</button>
+        <button class="primary" id="sbInsertAll">Insert all</button>
+      </div>
+
+      <div class="sb-progress" id="sbProgress" hidden><div class="sb-progress-bar" id="sbProgressBar"></div></div>
 
       <div class="status" id="status-sb"></div>
     </div>
@@ -160,6 +226,12 @@
 
       <label>GitHub file <span class="hint">(edit URL of tokens file on the target branch)</span></label>
       <input id="githubUrl" placeholder="https://github.com/nhunsaker/figree-demo/edit/main/tokens/semantic.json" />
+
+      <label class="sb-check" style="margin-top:14px;">
+        <input type="checkbox" id="labelToggle" checked />
+        Label inserted components
+        <span class="hint">(wrap each insert in a named frame)</span>
+      </label>
     </div>
 
     <!-- off-screen clipboard buffer -->
@@ -205,7 +277,7 @@
       }
 
       // ── persisted settings ─────────────────────────────────────────────
-      var LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl', sb: 'figtree.storybookUrl', auto: 'figtree.autoSync' };
+      var LS = { origin: 'figtree.origin', app: 'figtree.appUrl', gh: 'figtree.githubUrl', sb: 'figtree.storybookUrl', auto: 'figtree.autoSync', label: 'figtree.labelInserts' };
       function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
       function lsSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
 
@@ -223,6 +295,11 @@
       $('appUrl').addEventListener('change',       function(e) { lsSet(LS.app,    e.target.value); });
       $('githubUrl').addEventListener('change',    function(e) { lsSet(LS.gh,     e.target.value); });
       $('storybookUrl').addEventListener('change', function(e) { lsSet(LS.sb,     e.target.value); });
+
+      // Label toggle (default ON — only false when explicitly saved as 'no').
+      $('labelToggle').checked = lsGet(LS.label) !== 'no';
+      $('labelToggle').addEventListener('change', function(e) { lsSet(LS.label, e.target.checked ? 'yes' : 'no'); });
+      function labelInserts() { return $('labelToggle').checked; }
 
       function trimOrigin() { return $('origin').value.trim().replace(/\/$/, ''); }
 
@@ -254,9 +331,15 @@
         } else if (msg.type === 'sync-result') {
           setStatus('✓ Variables synced — <b>' + msg.created + '</b> created, ' + msg.updated + ' updated' +
             (msg.skipped ? ', ' + msg.skipped + ' skipped' : '') + ' (collection "' + msg.collection + '").');
+        } else if (msg.type === 'insert-progress') {
+          showProgress(msg.done, msg.total);
         } else if (msg.type === 'insert-result') {
-          setSbStatus('✓ Inserted into the canvas.');
+          hideProgress();
+          clearSelection();
+          var n = msg.count || 1;
+          setSbStatus('✓ Inserted ' + n + ' component' + (n === 1 ? '' : 's') + ' into the canvas.');
         } else if (msg.type === 'error') {
+          hideProgress();
           setStatus('Plugin error: ' + msg.message, true);
         }
       };
@@ -394,10 +477,34 @@
           (changed.length ? '<br/>Changed: <b>' + changed.join(', ') + '</b>' : ''));
       };
 
+      // ── Storybook table state ──────────────────────────────────────────
+      var OTHER = '—other—';          // sentinel component value for untyped rows
+      var sbRows = [];                           // [{ storyId, component, story, importPath }]
+      var sbHasComponents = false;               // any row carries a component?
+      var sbFilters = {};                        // active component filters (empty = all)
+      var sbSelected = {};                       // selected storyIds
+      var sbArtifactCache = {};                  // importPath -> component artifact JSON
+
+      // Deterministic color for a component name (HSL hue from a simple hash).
+      function compColor(name) {
+        var h = 0, s = String(name || '?');
+        for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+        return 'hsl(' + h + ', 55%, 55%)';
+      }
+
+      function visibleRows() {
+        var active = Object.keys(sbFilters);
+        if (!active.length) return sbRows.slice();
+        return sbRows.filter(function(r) {
+          return sbFilters[r.component || OTHER];
+        });
+      }
+
       // ── Load story list (auto on storybook tab switch) ─────────────────
       function loadStories() {
         var origin = trimOrigin();
         if (!origin) return setSbStatus('Set Bridge origin in Settings.', true);
+        setSbStatus('Loading…');
         fetch(origin + '/artifacts')
           .then(function(res) {
             if (!res.ok) throw new Error('HTTP ' + res.status + (res.status === 404 ? ' — run `figtree-seed capture` first' : ''));
@@ -406,39 +513,205 @@
           .then(function(idx) {
             var stories = idx.stories || {};
             var ids = Object.keys(stories);
-            var sel = $('storyPick');
-            sel.innerHTML = '';
-            if (!ids.length) return setSbStatus('No captured stories. Run `figtree-seed capture`.', true);
-            for (var i = 0; i < ids.length; i++) {
-              var o = document.createElement('option');
-              o.value = ids[i];
-              var s = stories[ids[i]];
-              o.textContent = (s.component || '') + ' / ' + (s.name || ids[i]);
-              sel.appendChild(o);
+            sbRows = ids.map(function(id) {
+              var s = stories[id];
+              return { storyId: id, component: s.component || '', story: s.name || id, importPath: s.importPath || '' };
+            });
+            sbRows.sort(function(a, b) {
+              return (a.component || '').localeCompare(b.component || '') || a.story.localeCompare(b.story);
+            });
+            sbHasComponents = sbRows.some(function(r) { return r.component; });
+            sbFilters = {};
+            sbSelected = {};
+            sbArtifactCache = {};
+            renderChips();
+            renderTable();
+            updateBulk();
+            if (!ids.length) {
+              setSbStatus('');
+            } else {
+              setSbStatus(ids.length + ' captured stor' + (ids.length === 1 ? 'y' : 'ies') + ' loaded.');
             }
-            setSbStatus(ids.length + ' captured stor' + (ids.length === 1 ? 'y' : 'ies') + ' loaded.');
           })
-          .catch(function(e) { setSbStatus('Failed to load stories: ' + e.message, true); });
+          .catch(function(e) { setSbStatus('Failed to load stories: ' + e.message, true); sbRows = []; renderTable(); });
       }
       $('loadStories').onclick = loadStories;
 
-      // ── Insert from Storybook ──────────────────────────────────────────
-      $('insert').onclick = async function() {
+      // ── Filter chips ────────────────────────────────────────────────────
+      function renderChips() {
+        var box = $('sbFilters');
+        box.innerHTML = '';
+        if (!sbHasComponents) { box.hidden = true; return; }
+        box.hidden = false;
+
+        var comps = {}; var hasOther = false;
+        sbRows.forEach(function(r) { if (r.component) comps[r.component] = true; else hasOther = true; });
+        var names = Object.keys(comps).sort();
+        if (hasOther) names.push(OTHER);
+
+        var allChip = document.createElement('span');
+        allChip.className = 'sb-chip' + (Object.keys(sbFilters).length === 0 ? ' active' : '');
+        allChip.textContent = 'All';
+        allChip.onclick = function() { sbFilters = {}; renderChips(); renderTable(); updateBulk(); };
+        box.appendChild(allChip);
+
+        names.forEach(function(name) {
+          var chip = document.createElement('span');
+          chip.className = 'sb-chip' + (sbFilters[name] ? ' active' : '');
+          chip.textContent = name === OTHER ? 'Other' : name;
+          chip.onclick = function() {
+            if (sbFilters[name]) delete sbFilters[name]; else sbFilters[name] = true;
+            renderChips(); renderTable(); updateBulk();
+          };
+          box.appendChild(chip);
+        });
+      }
+
+      // ── Table ───────────────────────────────────────────────────────────
+      function renderTable() {
+        var body = $('sbBody');
+        body.innerHTML = '';
+        $('sbThComp').hidden = !sbHasComponents;
+
+        var rows = visibleRows();
+        if (!rows.length) {
+          var tr = document.createElement('tr');
+          var td = document.createElement('td');
+          td.colSpan = 5;
+          td.className = 'sb-empty';
+          td.innerHTML = sbRows.length
+            ? 'No stories match the filter.'
+            : 'No captured stories.<br>Run <code>figtree-seed capture</code>, then click ↻.';
+          tr.appendChild(td); body.appendChild(tr);
+          $('sbCheckAll').checked = false;
+          return;
+        }
+
+        rows.forEach(function(r) {
+          var tr = document.createElement('tr');
+
+          // checkbox
+          var tdc = document.createElement('td'); tdc.className = 'sb-col-check';
+          var cb = document.createElement('input'); cb.type = 'checkbox';
+          cb.checked = !!sbSelected[r.storyId];
+          cb.onchange = function() {
+            if (cb.checked) sbSelected[r.storyId] = true; else delete sbSelected[r.storyId];
+            updateBulk();
+          };
+          tdc.appendChild(cb); tr.appendChild(tdc);
+
+          // preview (Phase 1: type icon)
+          var tdp = document.createElement('td'); tdp.className = 'sb-col-prev';
+          var icon = document.createElement('div'); icon.className = 'sb-prev';
+          icon.style.background = compColor(r.component || r.story);
+          icon.textContent = (r.component || r.story || '?').charAt(0).toUpperCase();
+          tdp.appendChild(icon); tr.appendChild(tdp);
+
+          // component
+          var tdcomp = document.createElement('td'); tdcomp.className = 'sb-col-comp';
+          tdcomp.hidden = !sbHasComponents;
+          tdcomp.textContent = r.component || '';
+          tr.appendChild(tdcomp);
+
+          // story
+          var tds = document.createElement('td');
+          tds.textContent = r.story;
+          tr.appendChild(tds);
+
+          // per-row insert
+          var tda = document.createElement('td'); tda.className = 'sb-col-action';
+          var btn = document.createElement('button'); btn.className = 'sb-row-insert';
+          btn.textContent = 'Insert';
+          btn.onclick = function() { insertMany([r.storyId]); };
+          tda.appendChild(btn); tr.appendChild(tda);
+
+          body.appendChild(tr);
+        });
+
+        // header "select all" reflects whether every visible row is selected
+        var allSel = rows.every(function(r) { return sbSelected[r.storyId]; });
+        $('sbCheckAll').checked = rows.length > 0 && allSel;
+      }
+
+      $('sbCheckAll').onchange = function() {
+        var rows = visibleRows();
+        if ($('sbCheckAll').checked) rows.forEach(function(r) { sbSelected[r.storyId] = true; });
+        else rows.forEach(function(r) { delete sbSelected[r.storyId]; });
+        renderTable(); updateBulk();
+      };
+
+      // ── Bulk toolbar ──────────────────────────────────────────────────
+      function selectedIds() { return Object.keys(sbSelected); }
+      function clearSelection() { sbSelected = {}; renderTable(); updateBulk(); }
+
+      function updateBulk() {
+        var sel = selectedIds().length;
+        var bulk = $('sbBulk');
+        bulk.hidden = sel === 0;
+        if (sel > 0) {
+          $('sbBulkCount').textContent = sel + ' selected';
+          $('sbInsertAll').textContent = 'Insert all (' + visibleRows().length + ')';
+        }
+        // hide per-row insert buttons while selecting
+        var btns = document.querySelectorAll('.sb-row-insert');
+        for (var i = 0; i < btns.length; i++) btns[i].style.visibility = sel > 0 ? 'hidden' : 'visible';
+      }
+
+      $('sbInsertSel').onclick = function() { insertMany(selectedIds()); };
+      $('sbInsertAll').onclick = function() {
+        insertMany(visibleRows().map(function(r) { return r.storyId; }));
+      };
+
+      // ── Progress ────────────────────────────────────────────────────────
+      function showProgress(done, total) {
+        var p = $('sbProgress'); p.hidden = false;
+        $('sbProgressBar').style.width = total ? Math.round((done / total) * 100) + '%' : '0%';
+        setSbStatus('Inserting ' + done + ' / ' + total + '…');
+      }
+      function hideProgress() { $('sbProgress').hidden = true; $('sbProgressBar').style.width = '0%'; }
+
+      // ── Resolve roots + insert ──────────────────────────────────────────
+      // One /artifact fetch returns the whole component file (all sibling
+      // stories), so cache by importPath and dig out each story's root by id.
+      async function fetchComponentFile(origin, importPath, anyStoryId) {
+        if (sbArtifactCache[importPath]) return sbArtifactCache[importPath];
+        var res = await fetch(origin + '/artifact?id=' + encodeURIComponent(anyStoryId));
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var art = await res.json();
+        sbArtifactCache[importPath] = art;
+        return art;
+      }
+
+      function rowOf(storyId) {
+        for (var i = 0; i < sbRows.length; i++) if (sbRows[i].storyId === storyId) return sbRows[i];
+        return null;
+      }
+
+      async function insertMany(ids) {
         var origin = trimOrigin();
         if (!origin) return setSbStatus('Set Bridge origin in Settings.', true);
-        var id = $('storyPick').value;
-        if (!id) return setSbStatus('No stories loaded — click ↻ to refresh.', true);
-        setSbStatus('Fetching ' + id + '…');
+        if (!ids.length) return setSbStatus('Nothing selected.', true);
+        setSbStatus('Fetching ' + ids.length + ' component' + (ids.length === 1 ? '' : 's') + '…');
         try {
-          var res = await fetch(origin + '/artifact?id=' + encodeURIComponent(id));
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          var art = await res.json();
-          var story = (art.stories || []).find(function(s) { return s.id === id; }) || (art.stories || [])[0];
-          if (!story || !story.root) throw new Error('artifact has no root for ' + id);
-          post('insert-node', { node: story.root });
-          setSbStatus('Inserting ' + id + '…');
-        } catch(e) { setSbStatus('Insert failed: ' + e.message, true); }
-      };
+          var items = [];
+          for (var i = 0; i < ids.length; i++) {
+            var row = rowOf(ids[i]);
+            if (!row) continue;
+            var art = await fetchComponentFile(origin, row.importPath, ids[i]);
+            var story = (art.stories || []).find(function(s) { return s.id === ids[i]; });
+            if (!story || !story.root) throw new Error('artifact has no root for ' + ids[i]);
+            var label = (row.component ? row.component + ' / ' : '') + row.story;
+            items.push({ node: story.root, label: label });
+          }
+          if (!items.length) throw new Error('no roots resolved');
+          if (items.length === 1 && !labelInserts()) {
+            post('insert-node', { node: items[0].node });   // existing single path
+          } else {
+            post('insert-nodes', { items: items, withLabels: labelInserts() });
+          }
+          setSbStatus('Inserting ' + items.length + ' component' + (items.length === 1 ? '' : 's') + '…');
+        } catch (e) { setSbStatus('Insert failed: ' + e.message, true); hideProgress(); }
+      }
 
       // initialise — show tokens view, views start hidden via CSS (.view { display:none })
       showView('tokens');
